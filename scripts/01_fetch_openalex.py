@@ -67,7 +67,7 @@ FIELDS = [
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def reconstruct_abstract(inverted_index: dict | None) -> str:
+def reconstruct_abstract(inverted_index) -> str:
     """OpenAlex stores abstracts as {word: [position, ...]}. Reconstruct the text."""
     if not inverted_index:
         return ""
@@ -79,7 +79,7 @@ def reconstruct_abstract(inverted_index: dict | None) -> str:
     return " ".join(word for _, word in positions)
 
 
-def get_journal_name(primary_location: dict | None) -> str:
+def get_journal_name(primary_location) -> str:
     if not primary_location:
         return ""
     source = primary_location.get("source") or {}
@@ -113,7 +113,7 @@ def get_top_concepts(concepts: list) -> str:
     return "; ".join(c.get("display_name", "") for c in sorted_concepts[:5])
 
 
-def fetch_all_works(filter_str: str, per_page: int = 200) -> list[dict]:
+def fetch_all_works(filter_str: str, per_page: int = 200):
     """
     Paginate through all OpenAlex results for a given filter.
     Uses cursor-based pagination (handles >10k results).
@@ -160,7 +160,7 @@ def fetch_all_works(filter_str: str, per_page: int = 200) -> list[dict]:
     return all_works
 
 
-def works_to_dataframe(works: list[dict]) -> pd.DataFrame:
+def works_to_dataframe(works) -> pd.DataFrame:
     rows = []
     for w in works:
         rows.append({
