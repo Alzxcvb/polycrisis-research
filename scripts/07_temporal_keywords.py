@@ -318,7 +318,7 @@ def main():
     full_p = [paper_terms(r) for r in raw_full[0].to_dict("records")]
     full_l = [paper_terms(r) for r in raw_full[1].to_dict("records")]
     cmm = {}
-    for k in (45, TOP_N):
+    for k in (TOP_N,):
         cmm[k] = {"all rows polycrisis": mismatches(sv_p, full_p, k), "all rows ltg": mismatches(sv_l, full_l, k),
                  "deduped polycrisis": mismatches(sv_p, list(poly["terms"]), k), "deduped ltg": mismatches(sv_l, list(ltg["terms"]), k)}
         print(f"Count mismatches against 05's saved counts, first {k} terms: {cmm[k]}")
@@ -520,7 +520,7 @@ def main():
     md.append("## Question\n\nIs the vocabulary of the polycrisis literature and the Limits to Growth (LtG) literature converging over time?\n")
     md.append("## Method\n")
     md.append(
-        f"* **Keyword source.** The same as the {ov05} of {TOP_N} headline in `scripts/05_simple_viz.py`, except that repeated OpenAlex ids are kept once (counts differ from 05's saved counts for {cmm[45]['deduped polycrisis']} polycrisis and {cmm[45]['deduped ltg']} LtG terms in the first 45, see the consistency check): the `keywords` and `concepts` columns of "
+        f"* **Keyword source.** The same as the {ov05} of {TOP_N} headline in `scripts/05_simple_viz.py`, except that repeated OpenAlex ids are kept once (counts differ from 05's saved counts for {cmm[TOP_N]['deduped polycrisis']} polycrisis and {cmm[TOP_N]['deduped ltg']} LtG terms in the saved top {TOP_N}, see the consistency check): the `keywords` and `concepts` columns of "
         "`data/polycrisis_papers.csv` and `data/ltg_refined_papers.csv`, lowercased, longer than 2 characters, counted once per paper, "
         "then the stopword list and the drop of any term containing a bracket from 05. These are the OpenAlex keyword and concept tags saved in the CSVs, not author keywords.\n"
         f"* **Consistency check.** For the full period, the top {TOP_N} lists of the two corpora share {ov_full} terms with alphabetical tie breaking, recomputed from the paper CSVs. "
@@ -529,11 +529,11 @@ def main():
            f"These share the count but not the terms: the top 50 sets differ by {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms per side. " if ov_full == ov05 else
            "These do not agree, and this note reports the paper CSV number for the full period without forcing a match. ")
         + f"Tie sensitivity of this headline: counting only terms above the cutoff count gives {full_tr['strict']}; random tie breaking over {TIE_DRAWS} draws gives a mean of {full_tr['mean']:.1f} "
-        f"(5th to 95th percentile {full_tr['p5']:.0f} to {full_tr['p95']:.0f}). So the {ov05} can reasonably be read as roughly {full_tr['p5']:.0f} to {full_tr['p95']:.0f}, not as an exact count. "
+        f"(5th to 95th percentile {full_tr['p5']:.0f} to {full_tr['p95']:.0f})."
         f"Full period ties: polycrisis cutoff count {full_tr['parts_p'][0]} shared by {len(full_tr['parts_p'][2])} {'term' if len(full_tr['parts_p'][2]) == 1 else 'terms'} for {full_tr['parts_p'][3]} open {'slot' if full_tr['parts_p'][3] == 1 else 'slots'}; "
         f"LtG cutoff count {full_tr['parts_l'][0]} shared by {len(full_tr['parts_l'][2])} {'term' if len(full_tr['parts_l'][2]) == 1 else 'terms'} for {full_tr['parts_l'][3]} open {'slot' if full_tr['parts_l'][3] == 1 else 'slots'}. "
-        f"Why this differs from 05's saved counts (checked in code): counting every CSV row reproduces 05's saved counts with {cmm[45]['all rows polycrisis']} polycrisis and {cmm[45]['all rows ltg']} LtG mismatches in the first 45 terms ({cmm[TOP_N]['all rows polycrisis']} and {cmm[TOP_N]['all rows ltg']} in the first {TOP_N}). "
-        f"Keeping each OpenAlex id once, as this script does, changes {cmm[45]['deduped polycrisis']} polycrisis and {cmm[45]['deduped ltg']} LtG term counts in the first 45 ({cmm[TOP_N]['deduped polycrisis']} and {cmm[TOP_N]['deduped ltg']} in the first {TOP_N}). "
+        f"Why this differs from 05's saved counts (checked in code): counting every CSV row reproduces 05's saved counts with {cmm[TOP_N]['all rows polycrisis']} polycrisis and {cmm[TOP_N]['all rows ltg']} LtG mismatches in the {TOP_N} terms of each saved top list. "
+        f"Keeping each OpenAlex id once, as this script does, changes {cmm[TOP_N]['deduped polycrisis']} polycrisis and {cmm[TOP_N]['deduped ltg']} LtG term counts in the {TOP_N} terms of each saved top list. "
         f"The cause is the repeated ids in the CSVs ({n_rows_poly} polycrisis rows for {len(poly)} unique ids, {n_rows_ltg} LtG rows for {len(ltg)}), which 05's route counts more than once and this script counts once. "
         f"As a result this script's top 50 lists have {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms that 05's lists lack, and the reverse; ties at the cutoff add to this. "
         "02 also stores empty keyword cells as the text nan, which 05 drops by accident and this script treats as empty.\n"
