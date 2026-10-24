@@ -530,8 +530,8 @@ def main():
            "These do not agree, and this note reports the paper CSV number for the full period without forcing a match. ")
         + f"Tie sensitivity of this headline: counting only terms above the cutoff count gives {full_tr['strict']}; random tie breaking over {TIE_DRAWS} draws gives a mean of {full_tr['mean']:.1f} "
         f"(5th to 95th percentile {full_tr['p5']:.0f} to {full_tr['p95']:.0f}). So the {ov05} can reasonably be read as roughly {full_tr['p5']:.0f} to {full_tr['p95']:.0f}, not as an exact count. "
-        f"Full period ties: polycrisis cutoff count {full_tr['parts_p'][0]} shared by {len(full_tr['parts_p'][2])} terms for {full_tr['parts_p'][3]} open slots; "
-        f"LtG cutoff count {full_tr['parts_l'][0]} shared by {len(full_tr['parts_l'][2])} terms for {full_tr['parts_l'][3]} open slots. "
+        f"Full period ties: polycrisis cutoff count {full_tr['parts_p'][0]} shared by {len(full_tr['parts_p'][2])} {'term' if len(full_tr['parts_p'][2]) == 1 else 'terms'} for {full_tr['parts_p'][3]} open {'slot' if full_tr['parts_p'][3] == 1 else 'slots'}; "
+        f"LtG cutoff count {full_tr['parts_l'][0]} shared by {len(full_tr['parts_l'][2])} {'term' if len(full_tr['parts_l'][2]) == 1 else 'terms'} for {full_tr['parts_l'][3]} open {'slot' if full_tr['parts_l'][3] == 1 else 'slots'}. "
         f"Why this differs from 05's saved counts (checked in code): counting every CSV row reproduces 05's saved counts with {cmm[45]['all rows polycrisis']} polycrisis and {cmm[45]['all rows ltg']} LtG mismatches in the first 45 terms ({cmm[TOP_N]['all rows polycrisis']} and {cmm[TOP_N]['all rows ltg']} in the first {TOP_N}). "
         f"Keeping each OpenAlex id once, as this script does, changes {cmm[45]['deduped polycrisis']} polycrisis and {cmm[45]['deduped ltg']} LtG term counts in the first 45 ({cmm[TOP_N]['deduped polycrisis']} and {cmm[TOP_N]['deduped ltg']} in the first {TOP_N}). "
         f"The cause is the repeated ids in the CSVs ({n_rows_poly} polycrisis rows for {len(poly)} unique ids, {n_rows_ltg} LtG rows for {len(ltg)}), which 05's route counts more than once and this script counts once. "
@@ -616,6 +616,7 @@ def main():
         + "; ".join(f"{r.period} {r.mean_terms_polycrisis:.1f} polycrisis and {r.mean_terms_ltg:.1f} LtG" for r in odf.itertuples())
         + ", and the share of papers with no tags is " + "; ".join(f"{r.period} {100 * r.untagged_share_polycrisis:.1f}% polycrisis and {100 * r.untagged_share_ltg:.1f}% LtG" for r in odf.itertuples())
         + ". If tagging differs between periods or corpora, a change in overlap may come from tagging as well as from what authors write. This note does not test how the tags were produced.\n"
+        "* **Corpus filter.** The LtG refined corpus was filtered in `scripts/01b_fetch_ltg_refined.py` on text that includes the same keyword and concept tags counted here, together with the title and abstract: a paper containing a strong marker such as polycrisis is kept, and a paper whose text contains a biology or ecology marker such as ecology is rejected unless a strong marker is present.\n"
         f"* **Broad tags.** Shared top keywords can be broad labels instead of shared ideas. The full period strict shared set is: {'; '.join(sorted(full_tr['strict_p'] & full_tr['strict_l']))}. Whether these reflect shared ideas is not tested here.\n"
         f"* **Partial 2026.** The latest publication date in the data is {latest_txt}, so the last period is not a complete two years.\n"
         f"* **Small early bins.** Polycrisis papers: {int((poly.year <= 2019).sum())} up to 2019 and {int((poly.year <= 2022).sum())} up to 2022, out of {len(poly)}, so the earliest polycrisis period is small and merged. "
