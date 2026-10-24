@@ -826,7 +826,7 @@ def main():
                   + "Rows above: " + (", ".join(f"N = {n} with {m} reference{'s' if m > 1 else ''} per side" for (n, m, *_), c in zip(null_rows, cat) if c == "above") or "none") + ". "
                   "Where the observed count is inside or above the range, the count is not lower than each field citing its own literature would give; where it is below, it is lower than that.")
     md.append("\n" + interp + " The model ignores topical clustering inside each field, which any real literature has, so being near or below it is expected to some degree.\n")
-    md.append("Secondary null (pooled): the same draw, but from the pooled references of both corpora together. Because real papers live in one corpus, a count below this null mostly reflects the two corpora citing different literatures, so it is shown for comparison only.\n")
+    md.append("Secondary null (pooled): the same draw, but from the pooled references of both corpora together. Real papers live in one corpus, so this null is shown for comparison only.\n")
     md.append(md_table(["N", "Min refs to each canon", "Observed bridge papers", "Pooled null mean", "5th percentile", "95th percentile", "Maximum"],
                        [(n, m, obs, f"{mu:.1f}", f"{lo:.0f}", f"{hi:.0f}", mx) for n, m, obs, mu, lo, hi, mx in null_rows_pooled]))
     md.append("\nWithin corpus null for the variant that keeps the shared canon in both canons:\n")

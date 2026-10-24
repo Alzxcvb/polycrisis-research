@@ -31,6 +31,7 @@ Output:
 No network access.
 """
 
+import ast
 import json
 import re
 import unicodedata
@@ -68,7 +69,7 @@ TIE_DRAWS = 1000
 SEED = 20261024
 
 # Copied from 05_simple_viz.py (that file imports plotting libraries that are not
-# needed here). Keep in sync if 05 changes.
+# needed here). A runtime check below asserts this equals 05's set.
 STOPWORDS = {
     "political science", "sociology", "computer science", "mathematics",
     "physics", "psychology", "engineering", "chemistry", "biology",
@@ -83,6 +84,20 @@ STOPWORDS = {
     "resilience (materials science)", "government (linguistics)",
     "crisis response", "epistemology",
 }
+
+
+def _check_stopwords_against_05():
+    """05 cannot be imported here (it loads plotting libraries and builds figures), so read its STOPWORDS
+    set literal from the source and fail loudly if this copy has drifted."""
+    src = (Path(__file__).parent / "05_simple_viz.py").read_text()
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "STOPWORDS" for t in node.targets):
+            assert set(ast.literal_eval(node.value)) == STOPWORDS, "STOPWORDS differs from scripts/05_simple_viz.py"
+            return
+    raise AssertionError("STOPWORDS not found in scripts/05_simple_viz.py")
+
+
+_check_stopwords_against_05()
 
 
 # ── Keywords ──────────────────────────────────────────────────────────────────
@@ -477,7 +492,8 @@ def main():
     first = odf.iloc[0]
     ctrl_rows = [(r.period, f"{r.overlap_random_mean:.1f}", f"{r.matched_overlap_mean:.1f}", f"{r.matched_overlap_p5:.0f} to {r.matched_overlap_p95:.0f}", f"{r.overlap_random_mean - r.matched_overlap_mean:+.1f}", r.matched_n_per_corpus)
                  for r in odf.itertuples()]
-    equal_note = (f"Size matched control: in every period the script draws {CONTROL_N} papers from each corpus ({N_SUBSAMPLES} draws, random tie breaking), so both sides and all periods have the same size. "
+    equal_note = (f"Size matched control: each row draws the same number of papers from each corpus, without replacement ({N_SUBSAMPLES} draws, random tie breaking): {', '.join(f'{r.matched_n_per_corpus} for {r.period}' for r in odf.itertuples())}"
+                  + (f"; for the single year rows {', '.join(f'{r.matched_n_per_corpus} for {r.period}' for r in oref.itertuples())}" if len(oref) else "") + f" (the smaller of {CONTROL_N} and the tagged papers available in each corpus). "
                   + "Overlap at that size: " + "; ".join(f"{r.period} {r.matched_overlap_mean:.1f} (5th to 95th {r.matched_overlap_p5:.0f} to {r.matched_overlap_p95:.0f})" for r in odf.itertuples())
                   + ". Size matched cosine: " + "; ".join(f"{r.period} {r.matched_cos_mean:.3f} (5th to 95th {r.matched_cos_p5:.3f} to {r.matched_cos_p95:.3f}) against observed {r.cosine_per_paper:.3f}" for r in odf.itertuples())
                   + ". Size matched weighted Jaccard: " + "; ".join(f"{r.period} {r.matched_wj_mean:.3f} (5th to 95th {r.matched_wj_p5:.3f} to {r.matched_wj_p95:.3f}) against observed {r.weighted_jaccard_share:.3f}" for r in odf.itertuples())
@@ -514,7 +530,7 @@ def main():
         f"* **Measures per period.** Top {TOP_N} overlap is reported three ways: with alphabetical tie breaking (this script's tie rule; 05 breaks ties by first seen order, so the full period count of {ov_full} matches 05's {ov05} only as a count, and the top 50 sets differ by {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms per side; shown for comparison only), with the strict set (only terms whose count is above the cutoff count), "
         f"and with random tie breaking ({TIE_DRAWS} seeded draws, mean and 5th to 95th percentile). Readings use the random tie breaking numbers. "
         "Weighted Jaccard uses all keywords by share of papers (sum of the smaller share divided by sum of the larger share), and cosine similarity uses keyword vectors in which each paper adds a total weight of 1 spread over its keywords; neither depends on a top 50 cutoff.\n"
-        f"* **Size matched control.** Because the corpora differ in size, the script also draws {CONTROL_N} papers from each corpus in every period ({N_SUBSAMPLES} draws) and measures the top {TOP_N} overlap with random tie breaking. {CONTROL_N} is below the smallest main period corpus ({int(min(odf.n_polycrisis.min(), odf.n_ltg.min()))} papers). Seed {SEED}.\n"
+        f"* **Size matched control.** Because the corpora differ in size, the script also draws, without replacement, the smaller of {CONTROL_N} and the tagged papers available from each corpus in each row ({N_SUBSAMPLES} draws) and measures the top {TOP_N} overlap with random tie breaking. {CONTROL_N} is below the smallest main period corpus ({int(min(odf.n_polycrisis.min(), odf.n_ltg.min()))} papers). Seed {SEED}.\n"
         f"* **Full period row.** Uses the same rule as the period rows: tagged papers only. That is {n_full_p} polycrisis and {n_full_l} LtG papers, including {n_full_noyear_p} and {n_full_noyear_l} with no year, which the period rows cannot include.\n")
     md.append("## Papers per period\n")
     md.append(md_table(["Period", "Polycrisis papers", "Polycrisis with tags (used)", "LtG papers", "LtG with tags (used)"],
@@ -541,7 +557,7 @@ def main():
         md.append(f"\nSingle years for reference only, not used for the main reading (LtG tagged papers used: {', '.join(str(int(r.n_ltg)) + ' in ' + r.period for r in oref.itertuples())}, under 50, so treat as indicative only):\n")
         md.append(md_table(["Period", "Polycrisis used", "LtG used", "Overlap, random ties: mean (5th to 95th)", "Overlap, strict set", "Weighted Jaccard", "Cosine", "Size matched mean"],
                            [(r.period, r.n_polycrisis, r.n_ltg, f"{r.overlap_random_mean:.1f} ({r.overlap_random_p5:.0f} to {r.overlap_random_p95:.0f})", r.overlap_strict,
-                             f"{r.weighted_jaccard_share:.3f}", f"{r.cosine_per_paper:.3f}", f"{r.matched_overlap_mean:.1f}") for r in oref.itertuples()]))
+                             f"{r.weighted_jaccard_share:.3f}", f"{r.cosine_per_paper:.3f}", f"{r.matched_overlap_mean:.1f} (n = {r.matched_n_per_corpus} per corpus)") for r in oref.itertuples()]))
     md.append("\n### New and shared keywords by period\n")
     md.append("These lists use the strict sets only: terms whose count is above the cutoff count, so tied terms are left out. Terms at the cutoff could move in or out, so a keyword missing here may still be near the edge. The tie table above gives how many terms are tied in each period. "
               "Definition: a term has entered when it is in this period's strict set and was not among the previous period's top 50 candidates, meaning the previous strict set plus every term tied at the previous cutoff. "

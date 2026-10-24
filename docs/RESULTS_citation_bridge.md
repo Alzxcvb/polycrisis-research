@@ -140,7 +140,7 @@ Primary null (within corpus): each tested paper keeps its own number of referenc
 
 Of the 6 rows, 3 are below the within corpus null range, 3 are inside it and 0 are above it. Rows below: N = 25 with 1 reference per side, N = 50 with 1 reference per side, N = 100 with 1 reference per side. Rows above: none. Where the observed count is inside or above the range, the count is not lower than each field citing its own literature would give; where it is below, it is lower than that. The model ignores topical clustering inside each field, which any real literature has, so being near or below it is expected to some degree.
 
-Secondary null (pooled): the same draw, but from the pooled references of both corpora together. Because real papers live in one corpus, a count below this null mostly reflects the two corpora citing different literatures, so it is shown for comparison only.
+Secondary null (pooled): the same draw, but from the pooled references of both corpora together. Real papers live in one corpus, so this null is shown for comparison only.
 
 | N | Min refs to each canon | Observed bridge papers | Pooled null mean | 5th percentile | 95th percentile | Maximum |
 |:--|:--|:--|:--|:--|:--|:--|
