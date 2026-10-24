@@ -54,8 +54,8 @@ DOC_DIR.mkdir(exist_ok=True)
 TOP_N = 50
 # Bins chosen from the year counts printed at the start of a run. The polycrisis
 # corpus has only 22 papers up to 2019 and 84 up to 2022, so everything up to
-# 2022 is one bin. LtG has only 50 papers in 2023 and 47 in 2024 (39 with tags), and fewer once
-# papers with no tags are dropped, so those two years are merged for the main
+# 2022 is one bin. LtG has 50 papers in 2023 (47 with tags) and 47 papers in 2024 (39 with
+# tags), under 50 once papers with no tags are dropped, so those two years are merged for the main
 # analysis and shown singly for reference only. Counts after dropping papers with no
 # tags are printed and checked against MIN_PAPERS.
 BINS = [("up to 2022", None, 2022), ("2023 to 2024", 2023, 2024), ("2025 to 2026", 2025, 2026)]
@@ -543,16 +543,17 @@ def main():
     rmx = int(np.argmax(rm)); rmn = int(np.argmin(rm))
     mrg = list(odf.merged_overlap_random_mean)
     mrg_last = mrg[-1]
-    mrg_shape = (int(np.argmax(mrg)) == int(np.argmax(rm))) and mrg[-1] < max(mrg)
+    sy = [(r.period, r.overlap_random_mean) for r in oref.itertuples()]      # single year rows, reference only
     mx_i = int(np.argmax(mm))
-    plain = (f"In plain terms: the tie robust overlap of the two fields' top {TOP_N} keywords is highest in {odf.period.iloc[rmx]} ({rm[rmx]:.1f} shared keywords) and lowest in {odf.period.iloc[rmn]} ({rm[rmn]:.1f}); "
-             + ("it rises at every step. " if steps_up else
-                (f"it is {rm[-1]:.1f} in {odf.period.iloc[-1]}, "
-                 + ("lower than the peak, so the data show a rise then a fall, not steady convergence. " if rmx != len(rm) - 1 else "the highest point, but not every step is a rise. ")))
-             + f"With duplicate records merged by title and first author, the {odf.period.iloc[-1]} overlap is {mrg_last:.1f} instead of {rm[-1]:.1f}, and the rise then fall reading " + ("still holds" if mrg_shape else "does not hold") + f" (merged series: {', '.join(f'{x:.1f}' for x in mrg)}). "
-             + f"{n_both} papers are in both corpora; each is counted in both corpora's periods and they are not tested separately. "
-             + f"The size matched series " + ("peaks in the same period." if mx_i == rmx else f"peaks in {odf.period.iloc[mx_i]}, a different period.")
-             + " Periods differ a lot in paper counts, so read the details below with the size and tie caveats.")
+    sy_txt = ", ".join(f"{pname} {v:.1f}" for pname, v in sy)
+    single_vals = [v for _, v in sy] + [rm[-1]]
+    plain = (f"In plain terms: the highest tie robust overlap of the two fields' top {TOP_N} keywords is in {odf.period.iloc[rmx]} ({rm[rmx]:.1f} shared keywords), and the lowest is in {odf.period.iloc[rmn]} ({rm[rmn]:.1f}). "
+             f"That two year bin pools years that look different on their own: the single year rows give {sy_txt}, and {odf.period.iloc[-1]} gives {rm[-1]:.1f}. "
+             f"The highest single year or last period value is {max(single_vals):.1f}, against the pooled {rm[rmx]:.1f}, so the pooled peak is partly a pooling and sample size effect. "
+             f"With duplicate records merged by title and first author the period series is {', '.join(f'{x:.1f}' for x in mrg)} instead of {', '.join(f'{x:.1f}' for x in rm)}. "
+             f"The single year and last period values differ by at most {max(single_vals) - min(single_vals):.1f} keywords, and the duplicate merge moves the last period by {mrg_last - rm[-1]:+.1f}, so this note makes no claim of a trend in either direction. "
+             f"{n_both} papers are in both corpora; each is counted in both corpora's periods and they are not tested separately. "
+             "Periods differ a lot in paper counts, so read the details below with the size and tie caveats.")
     md.append("## Plain reading\n")
     md.append(plain + "\n")
     md.append(f"Duplicate record sensitivity: this script keeps one row per OpenAlex id, while 06 finds more records of the same work. Applying the same title and first author rule here removes {n_merged_p} more polycrisis and {n_merged_l} more LtG records "
