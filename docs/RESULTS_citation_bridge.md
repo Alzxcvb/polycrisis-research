@@ -164,6 +164,8 @@ Within corpus null for the variant that keeps the shared canon in both canons:
 
 Both nulls remove topic structure, and weighted draws favour heavily cited works, so papers with long reference lists hit both canons more often in the null.
 
+Variant 2 (most cited papers inside each corpus by cited_by_count) uses the same tie break as the main canon: ties at the cutoff are settled by lowest OpenAlex id. Papers tied at the cutoff count, by N: N = 25: polycrisis cutoff 25 citations with 1 paper at that count; LtG cutoff 150 citations with 2 papers at that count. N = 50: polycrisis cutoff 14 citations with 5 papers at that count; LtG cutoff 66 citations with 1 paper at that count. N = 100: polycrisis cutoff 6 citations with 16 papers at that count; LtG cutoff 30 citations with 3 papers at that count.
+
 ## Canon cutoff ties
 
 The canon is the top N works by number of citing papers, and many works tie at the cutoff count, so which tied works get in was decided by id order. At N = 50 the cutoff is 7 citing papers for Canon_P (11 works tied for 7 open slots) and 7 for Canon_L (36 works tied for 3 open slots). The table shows bridge counts with the canon built three ways: id order (the primary), the strict canon (only works above the cutoff count, so the canon is smaller than N), and random tie breaking (500 seeded draws, mean and 5th to 95th percentile). Merged records, most referenced works.

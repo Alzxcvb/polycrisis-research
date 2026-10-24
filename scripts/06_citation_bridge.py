@@ -843,6 +843,16 @@ def main():
     md.append(md_table(["N", "Min refs to each canon", "Observed bridge papers", "Within corpus null mean", "5th percentile", "95th percentile", "Maximum"],
                        [(n, m, obs, f"{mu:.1f}", f"{lo:.0f}", f"{hi:.0f}", mx) for n, m, obs, mu, lo, hi, mx in null_keep]))
     md.append("\nBoth nulls remove topic structure, and weighted draws favour heavily cited works, so papers with long reference lists hit both canons more often in the null.\n")
+    cited_tie_txt = []
+    for n in SENS_NS:
+        cc = canons[("cited", n)]
+        parts_ = []
+        for side, lab in (("p", "polycrisis"), ("l", "LtG")):
+            cut_ = cc["cut"][0 if side == "p" else 1]
+            tied_ = sum(1 for v in cc["counts_" + side].values() if v == cut_)
+            parts_.append(f"{lab} cutoff {cut_} citations with {tied_} paper{'' if tied_ == 1 else 's'} at that count")
+        cited_tie_txt.append(f"N = {n}: " + "; ".join(parts_))
+    md.append("Variant 2 (most cited papers inside each corpus by cited_by_count) uses the same tie break as the main canon: ties at the cutoff are settled by lowest OpenAlex id. Papers tied at the cutoff count, by N: " + ". ".join(cited_tie_txt) + ".\n")
     md.append("## Canon cutoff ties\n")
     t50 = [r for r in tie_rows if r["N"] == PRIMARY_N][0]
     md.append(f"The canon is the top N works by number of citing papers, and many works tie at the cutoff count, so which tied works get in was decided by id order. "
