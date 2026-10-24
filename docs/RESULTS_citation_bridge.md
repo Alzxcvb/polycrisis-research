@@ -10,7 +10,7 @@ Which papers draw on both intellectual traditions? The test is whether a paper's
 
 * **Corpora.** Polycrisis: `data/polycrisis_papers.csv`. Limits to Growth (LtG): `data/ltg_refined_papers.csv` (the refined pull, not the noisy `ltg_papers.csv`). Papers are deduplicated by OpenAlex id across corpora.
 * **Reference list.** The union of the refetched list and the list saved in the original raw file. Both are OpenAlex records of the same work's references, and the two differ for some papers (see Reference coverage).
-* **Record merge (primary).** OpenAlex often holds several records of the same work, for example the Limits to Growth book. Before anything is counted, records are merged into one work when they have the same normalised title (lowercase, punctuation removed, spaces collapsed, at least 12 characters). For corpus papers the first author surname must also match in every rule below, including the title only and bare title rules: a merge that would put two corpus papers with different first author surnames in one group is refused. Cited works that are not corpus papers have no author data and merge on title alone. A record whose whole title equals the part before the colon of longer titles joins one of those title groups: the group whose records are cited by the most corpus papers in total (the number of corpus papers citing the work, not cited_by_count), with ties between groups going to the alphabetically first normalised title. The representative id of a merged group is the record cited by the most corpus papers, ties going to the lowest OpenAlex id. Only works cited by at least 3 corpus papers in either corpus are checked for duplicate records, because titles were looked up for those only. A merged cited work is shown with the earliest year among its merged records and the type of that earliest record, and canon work years, their medians and the canon type counts use that earliest year and type (the representative record's own year and type are kept in the canon CSVs as representative_year and representative_type). A merged work is counted once per citing paper, and merged corpus papers are one paper whose reference list is the union of their lists. A merged corpus paper takes the publication year and the cited_by_count of its most cited member record (it is not summed); ties on cited_by_count are settled by the lowest OpenAlex id, and 82 of the 134 merged corpus paper groups have their top two records tied. In the trend table it is therefore placed in that member's year, and in the top 15 ranking it is ranked by that member's count. Among the 53 merged bridge papers, 5 have member records with different publication years, so their placement in the yearly table depends on this rule. Results are shown with merged records (primary) and with unmerged records.
+* **Record merge (primary).** OpenAlex often holds several records of the same work, so records are merged before anything is counted. (a) Corpus papers are merged by normalised title plus first author surname; a paper with no first author on record is never merged, and two corpus papers with different first authors are never merged. (b) Cited works in the pool, meaning works cited by at least 3 corpus papers in either corpus (969 works), are merged by normalised title, plus one further rule for a title equal to the part before the colon of longer titles. (c) A merged group counts as one work when it is cited and as one paper when it is tested, with the union of its members' reference lists. A merged cited work is shown with the earliest year and the type of its earliest record, and a merged corpus paper takes the year and cited_by_count of its most cited member record. The exact rules are `build_gmap` in `scripts/06_citation_bridge.py`. Results are shown with merged records (primary) and with unmerged records.
 * **Canon (primary).** For each corpus, count how many of its papers cite each work. Canon_P is the top 50 works cited by polycrisis papers. Canon_L is the top 50 works cited by LtG papers. Ties at the cutoff are broken by OpenAlex id. No works were picked by hand.
 * **Shared canon.** Works that appear in both top N lists. They are removed from both canons for the bridge test, so a bridge paper must cite something distinctive to each tradition, not only the works both fields share.
 * **Sensitivity.** The same test at N = 25 and N = 100. Variant 2 builds each canon from the N most cited papers inside each corpus by `cited_by_count` (OpenAlex citations from anywhere), again removing papers that land in both lists.
@@ -19,13 +19,12 @@ Which papers draw on both intellectual traditions? The test is whether a paper's
 
 ## Merged records
 
-169 groups of records were merged (366 ids): 134 groups contain more than one corpus paper record and 35 contain at most one corpus paper record (cited works). The corpus has 2616 unique ids before merging and 2458 papers after. 8 of the 53 bridge papers are merged records. Title matches refused because the corpus papers had different first author surnames: 9 attempted pairs (bare title 1, same normalised title 8) in 3 title groups. How the check works in the code: records of a title group are taken in sorted OpenAlex id order and each is compared with every earlier record in the group, and a pair is refused when both sides already hold corpus papers with different first author surnames, so the count is of attempted pairs. When a title group holds several corpus papers with different first author surnames plus a record that is not a corpus paper, that record joins the lowest id corpus paper and the other corpus papers stay separate. Merged groups among the canon works (both top lists, before shared removal) are listed here. The representative id is the record cited by the most corpus papers, ties to the lowest id. The bare title rule is a heuristic: 5 of all groups used it with more than one longer title to choose from (it picks the most cited), and 5 of the groups listed here did, so check those rows.
+168 groups of records were merged (364 ids). The corpus has 2616 unique ids before merging and 2458 papers after. 8 of the 53 bridge papers are merged records. The headline at N = 50 is 53 of 1122 with merging and 55 of 1146 without. Merged groups among the canon works (both top lists, before shared removal) are listed here, with the rule that merged each.
 
 | Representative id | Records | Member ids (year) | Title | Rule |
 |:--|:--|:--|:--|:--|
 | W1495278944 | 4 | W1495278944 (2011); W2058528211 (2014); W2621687018 (2016); W4300731913 (2009) | Prosperity without Growth: Economics for a Finite Planet | bare title joined the group cited by the most corpus papers, of 2 longer title groups; same normalised title |
 | W1513494006 | 2 | W1513494006 (1977); W652406274 (1976) | Catastrophe or new society? a Latin American world model | same normalised title |
-| W1551322995 | 2 | W1551322995 (1997); W2047856663 (2017) | Our Ecological Footprint: reducing human impact on the earth | bare title joined the group cited by the most corpus papers, of 1 longer title group |
 | W1998742855 | 3 | W1998742855 (2005); W2212707908 (1998); W73006709 (2005) | Limits to growth: The 30‐year update | bare title joined the group cited by the most corpus papers, of 2 longer title groups; same normalised title |
 | W2026668196 | 2 | W2026668196 (1993); W2587080320 (1992) | Beyond the limits: Global collapse or a sustainable future | same normalised title |
 | W2101157755 | 2 | W2101157755 (1991); W2590520750 (2007) | The fifth discipline, the art and practice of the learning organization | same normalised title |
@@ -36,7 +35,6 @@ Which papers draw on both intellectual traditions? The test is whether a paper's
 | W2461718941 | 2 | W2461718941 (2016); W2614830943 (2017) | The Hegemony of Growth | bare title joined the group cited by the most corpus papers, of 1 longer title group |
 | W2580715104 | 2 | W2580715104 (2016); W3016717200 (2015) | Capitalism in the Web of Life: Ecology and the Accumulation of Capital | same normalised title |
 | W2617369555 | 2 | W2617369555 (2017); W4251362136 (2016) | Staying with the trouble: making kin in the Chthulucene | bare title joined the group cited by the most corpus papers, of 1 longer title group |
-| W2798631755 | 2 | W1746331820 (1992); W2798631755 (1992) | Beyond the Limits | bare title joined the group cited by the most corpus papers, of 2 longer title groups |
 | W2946838440 | 2 | W2946838440 (2019); W4240127868 (2020) | Rising despite the polycrisis? The European Parliament’s strategies of self-empowerment after Lisbon | paper title and first author; same normalised title |
 | W2948867601 | 2 | W2948867601 (2019); W4248336959 () | Introduction: the European Union beyond the polycrisis? Integration and politicization in an age of shifting cleavages | paper title and first author |
 | W2988934653 | 2 | W2610191465 (2000); W2988934653 (2000) | Business Dynamics: Systems Thinking and Modeling for a Complex World | bare title joined the group cited by the most corpus papers, of 1 longer title group |
@@ -69,8 +67,8 @@ Self references: when a merged unit's reference list is built, a reference that 
 | Set | Papers | With reference list | Share | Total references | Mean per paper with list | Distinct works cited |
 |:--|:--|:--|:--|:--|:--|:--|
 | polycrisis | 1385 | 681 | 49.2% | 29420 | 43.2 | 26220 |
-| ltg | 1080 | 447 | 41.4% | 13765 | 30.8 | 11222 |
-| either (deduped) | 2458 | 1122 | 45.6% | 42536 | 37.9 | 36254 |
+| ltg | 1080 | 447 | 41.4% | 13765 | 30.8 | 11223 |
+| either (deduped) | 2458 | 1122 | 45.6% | 42536 | 37.9 | 36255 |
 
 Saved list versus refetched list (unique papers, before merging): both empty 1470; both lists nonempty 1126; different (neither contains the other) 472; only refetched nonempty 6; only saved nonempty 14; refetched longer (superset of saved) 4; refetched shorter (subset of saved) 114; same set 536. Under the union rule 586 papers have a different reference list than under the previous rule (refetched list if nonempty, else saved list). Effect on the headline at N = 50, one reference per side: merged records 53 of 1122 before, 53 of 1122 now; unmerged records 55 of 1146 before, 55 of 1146 now. Two references per side: merged 8 before, 8 now; unmerged 10 before, 10 now. For the longer of the two lists rule, when the two lists have equal length the refetched list is used; this applies to 297 papers whose two lists have equal length but are different sets. Other rules for comparison (unmerged, N = 50, one reference per side): saved list only 48 of 1140 (two references per side 9); longer of the two lists 50 of 1146 (two references per side 10); union (primary) 55 of 1146 (10). The choice of rule moves the unmerged count by up to 7 bridge papers.
 
@@ -120,7 +118,7 @@ Papers in both corpora: 7. Unique papers: 2458. Papers with a reference list: 11
 
 Primary result (merged records, most referenced works, N = 50): 53 bridge papers out of 1122 papers with a reference list (4.7%). By corpus membership: both 3, ltg 23, polycrisis 27. With unmerged records the same test gives 55 out of 1146 (4.8%); the shared canon is 7 merged works against 7 unmerged records.
 
-At N = 50 the cutoff count was 7 citing papers for Canon_P and 7 for Canon_L. Works tied at the cutoff but left out: 5 for Canon_P and 36 for Canon_L.
+At N = 50 the cutoff count was 7 citing papers for Canon_P and 8 for Canon_L. Works tied at the cutoff but left out: 5 for Canon_P and 0 for Canon_L.
 
 The headline share depends on the shared canon choice: with the 7 shared works removed from both canons (primary) 53 of 1122 papers (4.7%) are bridges, and with the shared works kept in both canons 221 of 1122 (19.7%); the shared works are: The Limits To Growth (1972); A safe operating space for humanity (2009); Planetary boundaries: Guiding human development on a changing planet (2015); Trajectories of the Earth System in the Anthropocene (2018); Planetary Boundaries: Exploring the Safe Operating Space for Humanity (2009); Is Green Growth Possible? (2019); Doughnut Economics: Seven Ways to Think Like a 21st Century Economist (2016).
 
@@ -130,12 +128,12 @@ Primary null (within corpus): each tested paper keeps its own number of referenc
 
 | N | Min refs to each canon | Observed bridge papers | Within corpus null mean | 5th percentile | 95th percentile | Maximum |
 |:--|:--|:--|:--|:--|:--|:--|
-| 25 | 1 | 31 | 54.8 | 44 | 66 | 74 |
-| 25 | 2 | 5 | 4.4 | 1 | 8 | 10 |
-| 50 | 1 | 53 | 77.8 | 65 | 90 | 102 |
-| 50 | 2 | 8 | 9.2 | 5 | 14 | 18 |
-| 100 | 1 | 61 | 93.1 | 81 | 107 | 115 |
-| 100 | 2 | 10 | 12.9 | 8 | 18 | 24 |
+| 25 | 1 | 31 | 54.7 | 44 | 66 | 77 |
+| 25 | 2 | 5 | 4.4 | 2 | 7 | 10 |
+| 50 | 1 | 53 | 77.7 | 65 | 91 | 108 |
+| 50 | 2 | 8 | 9.0 | 5 | 13 | 19 |
+| 100 | 1 | 61 | 92.9 | 80 | 107 | 115 |
+| 100 | 2 | 10 | 12.9 | 8 | 18 | 22 |
 
 Of the 6 rows, 3 are below the within corpus null range, 3 are inside it and 0 are above it. Rows below: N = 25 with 1 reference per side, N = 50 with 1 reference per side, N = 100 with 1 reference per side. Rows above: none. Inside means within the 5th to 95th percentile range of the within corpus null. The model ignores topical clustering inside each field, which any real literature has, so being near or below it is expected to some degree.
 
@@ -143,23 +141,23 @@ Secondary null (pooled): the same draw, but from the pooled references of both c
 
 | N | Min refs to each canon | Observed bridge papers | Pooled null mean | 5th percentile | 95th percentile | Maximum |
 |:--|:--|:--|:--|:--|:--|:--|
-| 25 | 1 | 31 | 163.5 | 147 | 180 | 204 |
-| 25 | 2 | 5 | 31.5 | 24 | 39 | 48 |
-| 50 | 1 | 53 | 231.3 | 214 | 250 | 267 |
-| 50 | 2 | 8 | 59.0 | 50 | 69 | 78 |
-| 100 | 1 | 61 | 315.5 | 295 | 334 | 357 |
-| 100 | 2 | 10 | 103.7 | 92 | 116 | 125 |
+| 25 | 1 | 31 | 160.8 | 145 | 177 | 194 |
+| 25 | 2 | 5 | 30.7 | 24 | 38 | 46 |
+| 50 | 1 | 53 | 229.8 | 211 | 247 | 262 |
+| 50 | 2 | 8 | 58.5 | 49 | 69 | 78 |
+| 100 | 1 | 61 | 314.1 | 294 | 333 | 354 |
+| 100 | 2 | 10 | 103.0 | 90 | 116 | 128 |
 
 Within corpus null for the variant that keeps the shared canon in both canons:
 
 | N | Min refs to each canon | Observed bridge papers | Within corpus null mean | 5th percentile | 95th percentile | Maximum |
 |:--|:--|:--|:--|:--|:--|:--|
-| 25 | 1 | 181 | 185.6 | 167 | 204 | 219 |
-| 25 | 2 | 37 | 32.1 | 24 | 40 | 47 |
-| 50 | 1 | 221 | 244.9 | 226 | 263 | 281 |
-| 50 | 2 | 76 | 61.5 | 51 | 72 | 81 |
-| 100 | 1 | 260 | 307.2 | 286 | 327 | 352 |
-| 100 | 2 | 98 | 96.9 | 85 | 110 | 120 |
+| 25 | 1 | 181 | 185.7 | 169 | 204 | 219 |
+| 25 | 2 | 37 | 32.1 | 25 | 41 | 49 |
+| 50 | 1 | 221 | 245.1 | 226 | 264 | 283 |
+| 50 | 2 | 76 | 61.5 | 51 | 72 | 85 |
+| 100 | 1 | 260 | 307.4 | 288 | 328 | 339 |
+| 100 | 2 | 98 | 96.8 | 85 | 110 | 123 |
 
 Both nulls remove topic structure, and weighted draws favour heavily cited works, so papers with long reference lists hit both canons more often in the null.
 
@@ -167,16 +165,16 @@ Variant 2 (most cited papers inside each corpus by cited_by_count) uses the same
 
 ## Canon cutoff ties
 
-The canon is the top N works by number of citing papers, and many works tie at the cutoff count, so which tied works get in was decided by id order. At N = 50 the cutoff is 7 citing papers for Canon_P (11 works tied for 6 open slots) and 7 for Canon_L (37 works tied for 1 open slot). The table shows bridge counts with the canon built three ways: id order (the primary), the strict canon (only works above the cutoff count, so the canon is smaller than N), and random tie breaking (500 seeded draws, mean and 5th to 95th percentile). Merged records, most referenced works.
+The canon is the top N works by number of citing papers, and many works tie at the cutoff count, so which tied works get in was decided by id order. At N = 50 the cutoff is 7 citing papers for Canon_P (11 works tied for 6 open slots) and 8 for Canon_L (12 works tied for 12 open slots). The table shows bridge counts with the canon built three ways: id order (the primary), the strict canon (only works above the cutoff count, so the canon is smaller than N), and random tie breaking (500 seeded draws, mean and 5th to 95th percentile). Merged records, most referenced works.
 
 | N | Min refs to each canon | Id order (primary) | Strict canon | Random ties: mean (5th to 95th) | Tied works for open slots (Canon_P / Canon_L) |
 |:--|:--|:--|:--|:--|:--|
-| 25 | 1 | 31 | 31 | 28.3 (24 to 31) | 5 for 2 / 2 for 1 |
-| 25 | 2 | 5 | 5 | 4.6 (4 to 5) | 5 for 2 / 2 for 1 |
-| 50 | 1 | 53 | 51 | 54.4 (51 to 57) | 11 for 6 / 37 for 1 |
-| 50 | 2 | 8 | 8 | 8.0 (8 to 8) | 11 for 6 / 37 for 1 |
-| 100 | 1 | 61 | 53 | 61.5 (55 to 67) | 35 for 21 / 34 for 14 |
-| 100 | 2 | 10 | 10 | 11.4 (8 to 15) | 35 for 21 / 34 for 14 |
+| 25 | 1 | 31 | 31 | 28.3 (24 to 31) | 5 for 2 / 3 for 1 |
+| 25 | 2 | 5 | 5 | 4.6 (4 to 5) | 5 for 2 / 3 for 1 |
+| 50 | 1 | 53 | 46 | 54.3 (53 to 57) | 11 for 6 / 12 for 12 |
+| 50 | 2 | 8 | 7 | 8.0 (8 to 8) | 11 for 6 / 12 for 12 |
+| 100 | 1 | 61 | 53 | 61.4 (55 to 68) | 35 for 21 / 34 for 13 |
+| 100 | 2 | 10 | 10 | 11.3 (8 to 15) | 35 for 21 / 34 for 13 |
 
 
 ## Top 15 bridge papers by cited_by_count, with all rows tied at the last rank (20 rows; N = 50, most referenced works, merged records)
@@ -188,7 +186,7 @@ Standard competition ranking: papers with the same cited_by_count share a rank. 
 | 1 | Global polycrisis: the causal mechanisms of crisis entanglement | 2024 | polycrisis | 12 | 1 | 356 |
 | 2 | Avoiding the Limits to Growth: Gross National Happiness in Bhutan as a Model for Sustainable Development | 2013 | ltg | 1 | 4 | 77 |
 | 3 | The contested nature of political leadership in the European Union: conceptual and methodological cross-fertilisation | 2019 | polycrisis | 1 | 1 | 47 |
-| 4 | Over the horizon: Exploring the conditions of a post-growth world | 2018 | ltg | 1 | 8 | 28 |
+| 4 | Over the horizon: Exploring the conditions of a post-growth world | 2018 | ltg | 1 | 7 | 28 |
 | 5 | Eco-fascism: an oxymoron? Far-right nationalism, history, and the climate emergency | 2024 | polycrisis | 1 | 1 | 18 |
 | 6 | Towards a sustainable future in the age of polycrisis | 2024 | polycrisis | 1 | 1 | 11 |
 | 6 | Holistic eco-social imaginaries for a life-centered future | 2024 | polycrisis | 3 | 4 | 11 |
@@ -248,8 +246,8 @@ Bridge papers that are themselves canon works: 1 of 53 (canon works after shared
 
 * **Reference coverage.** Only 1122 of 2458 papers after merging (45.6%) have any reference list in OpenAlex. The bridge share is computed only over those. Papers without a list cannot be tested here, and nothing is claimed about them.
 * **OpenAlex reference completeness.** The saved and refetched reference lists are different sets for 472 papers and one is a strict subset of the other for 118 more, so the lists are not fixed. Coverage differs by document type, which means the tested papers are not a random sample. By type (papers with a reference list out of all papers; the 6 most common of 16 types): `article` 830 of 1573; `book-chapter` 185 of 442; `preprint` 42 of 122; `book` 9 of 102; `other` 4 of 68; `peer-review` 11 of 32.
-* **Books and chapters.** Types of the 93 canon works in the two top lists before shared removal: `article` 70; `book` 15; `unresolved` 4; `book-review` 2; `book-chapter` 1; `preprint` 1. A book cited by a paper counts like any other work. Books themselves rarely have reference lists: `book` 9 of 102 papers have one (8.8%), and books are outside the denominator for the most part. Chapters are more often covered: `book-chapter` 185 of 442 (41.9%). Even so, 257 chapters have no list and cannot be tested.
-* **Corpus query scope.** The corpora come from keyword searches, so the polycrisis corpus holds papers that use that word and the LtG corpus holds papers that matched the refined query. Canon_P and Canon_L describe what these two retrieved sets cite, not every paper in either field. In the LtG corpus the median publication year is 2013.0, 84.0% of papers with a year are from 2022 or earlier, and 35.3% are from before 2010. In the polycrisis corpus the median year is 2025.0 and 84.8% of papers with a year are from 2024 or later.
+* **Books and chapters.** Types of the 93 canon works in the two top lists before shared removal: `article` 69; `book` 16; `unresolved` 4; `book-review` 2; `book-chapter` 1; `preprint` 1. A book cited by a paper counts like any other work. Books themselves rarely have reference lists: `book` 9 of 102 papers have one (8.8%), and books are outside the denominator for the most part. Chapters are more often covered: `book-chapter` 185 of 442 (41.9%). Even so, 257 chapters have no list and cannot be tested.
+* **Corpus query scope.** The corpora come from keyword searches, so the polycrisis corpus holds papers that use that word and the LtG corpus holds papers that matched the refined query. Canon_P and Canon_L describe what these two retrieved sets cite, not every paper in either field. The LtG refined filter in `scripts/01b_fetch_ltg_refined.py` keeps any paper whose text contains a strong marker, including polycrisis and degrowth. In the LtG corpus the median publication year is 2013.0, 84.0% of papers with a year are from 2022 or earlier, and 35.3% are from before 2010. In the polycrisis corpus the median year is 2025.0 and 84.8% of papers with a year are from 2024 or later.
 * **Circularity.** The canon is derived from the same corpus it is then tested on, so papers in the corpus are by construction likely to cite works that are frequent in the corpus. A bridge here means citing the corpus's own frequent works from each side, not citing an outside list of founding texts. 1 of the 53 bridge papers is itself a canon work.
 * **Low bridge bar.** The main definition needs only one reference on each side. Requiring at least 2 on each side gives 8 bridge papers at N = 50 instead of 53 with merged records (10 instead of 55 unmerged). The main count should be read as the loosest version.
 * **Baseline.** The only baseline is the random reference draw above, which ignores topic. There is no comparison with a different pair of fields, so the bridge counts say how often both canons are cited, not whether that is more than usual for two related fields.
@@ -257,5 +255,5 @@ Bridge papers that are themselves canon works: 1 of 53 (canon works after shared
 * **Duplicate records.** Merging uses titles (and first author for papers) and was only run on works cited by at least 3 corpus papers, so duplicates of less cited works are not merged, and different works with identical titles could be merged by mistake. The merged groups among the canon are listed above.
 * **Canon definition.** A canon built from counts depends on corpus size and composition. A paper in both corpora counts toward both counts. Sensitivity runs above show how much the answer moves with N and with the variant.
 * **Refetch gaps.** 06a asked OpenAlex for every id; 131 of 2616 ids returned no record, and for those the saved list was used. Titles could not be resolved for 4 of 93 canon works.
-* **Thin canons.** At N = 50 the cutoff is 7 citing papers for Canon_P and 7 for Canon_L, and several works tie at the cutoff, so which tied works are in the canon is decided by id order. At N = 50 bridge counts are 53 (id order), 51 (strict canon) and 54.4 on average with random ties (5th to 95th 51 to 57); see the cutoff ties section. Treat the canon as a rough core, not a settled list.
+* **Thin canons.** At N = 50 the cutoff is 7 citing papers for Canon_P and 8 for Canon_L, and several works tie at the cutoff, so which tied works are in the canon is decided by id order. At N = 50 bridge counts are 53 (id order), 46 (strict canon) and 54.3 on average with random ties (5th to 95th 53 to 57); see the cutoff ties section. Treat the canon as a rough core, not a settled list.
 * **Partial 2026.** The latest publication date in the data is March 29, 2026, so 2026 holds only part of a year.

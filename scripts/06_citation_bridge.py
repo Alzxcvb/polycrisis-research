@@ -31,7 +31,9 @@ Output:
     first network run, then read offline)
     figures/bridge_papers_by_year.png
     docs/RESULTS_citation_bridge.md
-Network: one batched call group to api.openalex.org (titles of canon works).
+Network: one batched call group to api.openalex.org on the first run only, for titles, years and
+types of all pool works (works cited by at least 3 corpus papers; the count is printed and given in
+the note). Later runs read data/canon_metadata_cache.json.
 No email or mailto is sent.
 """
 
@@ -267,7 +269,7 @@ def build_gmap(raw_meta, pool_info, ucount):
         if ra == rb:
             return True
         sa, sb = sn_set.get(ra, set()), sn_set.get(rb, set())
-        if sa and sb and sa != sb:
+        if any(x.startswith("?") for x in sa | sb) or (sa and sb and sa != sb):
             refused[rule] += 1
             refused_groups.add((rule, label))
             return False
@@ -509,6 +511,9 @@ def main():
     bad_groups = [r for r, ms in comps.items() if len({first_surname(raw_meta.loc[m, "authors"]) or "?" + m for m in ms if m in raw_meta.index}) > 1]
     print(f"Merged groups containing corpus papers with different first author surnames (must be 0): {len(bad_groups)}")
     assert not bad_groups
+    no_author_merged = [r for r, ms in comps.items() if any(m in raw_meta.index and not first_surname(raw_meta.loc[m, "authors"]) for m in ms)]
+    print(f"Merged groups containing a corpus paper with no first author on record (must be 0): {len(no_author_merged)}")
+    assert not no_author_merged
     # ── merged records (primary) ──
     meta, members, refs = make_context(raw_meta, raw_members, raw_refs, gmap)
     # self references: a merged unit's reference list drops references that point to itself (another record of the same paper)
@@ -801,14 +806,10 @@ def main():
         "* **Corpora.** Polycrisis: `data/polycrisis_papers.csv`. Limits to Growth (LtG): `data/ltg_refined_papers.csv` "
         "(the refined pull, not the noisy `ltg_papers.csv`). Papers are deduplicated by OpenAlex id across corpora.\n"
         "* **Reference list.** The union of the refetched list and the list saved in the original raw file. Both are OpenAlex records of the same work's references, and the two differ for some papers (see Reference coverage).\n"
-        f"* **Record merge (primary).** OpenAlex often holds several records of the same work, for example the Limits to Growth book. Before anything is counted, records are merged into one work when they have the same normalised title (lowercase, punctuation removed, spaces collapsed, at least {MIN_TITLE} characters). "
-        "For corpus papers the first author surname must also match in every rule below, including the title only and bare title rules: a merge that would put two corpus papers with different first author surnames in one group is refused. Cited works that are not corpus papers have no author data and merge on title alone. A record whose whole title equals the part before the colon of longer titles joins one of those title groups: the group whose records are cited by the most corpus papers in total (the number of corpus papers citing the work, not cited_by_count), with ties between groups going to the alphabetically first normalised title. The representative id of a merged group is the record cited by the most corpus papers, ties going to the lowest OpenAlex id. "
-        f"Only works cited by at least {MIN_POOL_COUNT} corpus papers in either corpus are checked for duplicate records, because titles were looked up for those only. "
-        "A merged cited work is shown with the earliest year among its merged records and the type of that earliest record, and canon work years, their medians and the canon type counts use that earliest year and type (the representative record's own year and type are kept in the canon CSVs as representative_year and representative_type). A merged work is counted once per citing paper, and merged corpus papers are one paper whose reference list is the union of their lists. "
-        "A merged corpus paper takes the publication year and the cited_by_count of its most cited member record (it is not summed); ties on cited_by_count are settled by the lowest OpenAlex id, and "
-        f"{n_tied_units} of the {n_multi_units} merged corpus paper {'group has' if n_multi_units == 1 else 'groups have'} {'its' if n_multi_units == 1 else 'their'} top two records tied. In the trend table it is therefore placed in that member's year, and in the top 15 ranking it is ranked by that member's count. "
-        f"Among the {len(bdf)} merged bridge papers, {merged_year_diff} have member records with different publication years, so their placement in the yearly table depends on this rule. "
-        "Results are shown with merged records (primary) and with unmerged records.\n"
+        f"* **Record merge (primary).** OpenAlex often holds several records of the same work, so records are merged before anything is counted. (a) Corpus papers are merged by normalised title plus first author surname; a paper with no first author on record is never merged, and two corpus papers with different first authors are never merged. "
+        f"(b) Cited works in the pool, meaning works cited by at least {MIN_POOL_COUNT} corpus papers in either corpus ({len(pool_ids)} works), are merged by normalised title, plus one further rule for a title equal to the part before the colon of longer titles. "
+        "(c) A merged group counts as one work when it is cited and as one paper when it is tested, with the union of its members' reference lists. A merged cited work is shown with the earliest year and the type of its earliest record, and a merged corpus paper takes the year and cited_by_count of its most cited member record. "
+        "The exact rules are `build_gmap` in `scripts/06_citation_bridge.py`. Results are shown with merged records (primary) and with unmerged records.\n"
         f"* **Canon (primary).** For each corpus, count how many of its papers cite each work. Canon_P is the top {PRIMARY_N} works "
         f"cited by polycrisis papers. Canon_L is the top {PRIMARY_N} works cited by LtG papers. Ties at the cutoff are broken by OpenAlex id. "
         "No works were picked by hand.\n"
@@ -820,12 +821,10 @@ def main():
         "A stricter sensitivity version needs at least 2 references in Canon_P and at least 2 in Canon_L (column Min refs to each canon = 2 below), with the same denominator.\n"
         "* **Denominator.** Papers with a nonempty reference list, never all papers.\n")
     md.append("## Merged records\n")
-    md.append(f"{len(comps)} groups of records were merged ({len(gmap)} ids): {n_paper_groups_merged} groups contain more than one corpus paper record and {n_work_only} contain at most one corpus paper record (cited works). "
-              f"The corpus has {len(all0)} unique ids before merging and {len(all_ids)} papers after. {n_in_merged_bridge} of the {_pl(len(bdf), 'bridge paper', 'bridge papers')} {'is a merged record' if n_in_merged_bridge == 1 else 'are merged records'}. "
-              f"Title matches refused because the corpus papers had different first author surnames: {_pl(sum(refused_unions['pairs'].values()), 'attempted pair', 'attempted pairs')} ({', '.join(f'{k} {v}' for k, v in sorted(refused_unions['pairs'].items())) or 'none'}) in {_pl(refused_unions['groups'], 'title group', 'title groups')}. "
-              "How the check works in the code: records of a title group are taken in sorted OpenAlex id order and each is compared with every earlier record in the group, and a pair is refused when both sides already hold corpus papers with different first author surnames, so the count is of attempted pairs. When a title group holds several corpus papers with different first author surnames plus a record that is not a corpus paper, that record joins the lowest id corpus paper and the other corpus papers stay separate. "
-              "Merged groups among the canon works (both top lists, before shared removal) are listed here. The representative id is the record cited by the most corpus papers, ties to the lowest id. "
-              f"The bare title rule is a heuristic: {n_ambiguous} of all groups used it with more than one longer title to choose from (it picks the most cited), and {n_canon_ambiguous} of the groups listed here did, so check those rows.\n")
+    md.append(f"{len(comps)} groups of records were merged ({len(gmap)} ids). The corpus has {len(all0)} unique ids before merging and {len(all_ids)} papers after. "
+              f"{n_in_merged_bridge} of the {_pl(len(bdf), 'bridge paper', 'bridge papers')} {'is a merged record' if n_in_merged_bridge == 1 else 'are merged records'}. "
+              f"The headline at N = {PRIMARY_N} is {len(bdf)} of {len(with_refs)} with merging and {len(bridges0)} of {len(with0)} without. "
+              "Merged groups among the canon works (both top lists, before shared removal) are listed here, with the rule that merged each.\n")
     md.append(md_table(["Representative id", "Records", "Member ids (year)", "Title", "Rule"], canon_group_rows))
     md.append("\nBridge papers that are merged records of the same paper:\n")
     md.append(md_table(["Representative id", "Member ids", "Title", "Year"], bridge_merge_rows))
@@ -949,7 +948,7 @@ def main():
         + "; ".join(f"`{t}` {c}" for t, c in canon_types) + ". "
         "A book cited by a paper counts like any other work. " + books_chap_text + "\n"
         "* **Corpus query scope.** The corpora come from keyword searches, so the polycrisis corpus holds papers that use that word and the LtG corpus holds papers that matched the refined query. "
-        "Canon_P and Canon_L describe what these two retrieved sets cite, not every paper in either field. " + ltg_year_text + "\n"
+        "Canon_P and Canon_L describe what these two retrieved sets cite, not every paper in either field. The LtG refined filter in `scripts/01b_fetch_ltg_refined.py` keeps any paper whose text contains a strong marker, including polycrisis and degrowth. " + ltg_year_text + "\n"
         f"* **Circularity.** The canon is derived from the same corpus it is then tested on, so papers in the corpus are by construction likely to cite works that are frequent in the corpus. A bridge here means citing the corpus's own frequent works from each side, not citing an outside list of founding texts. {len(canon_is_bridge)} of the {_pl(len(bdf), 'bridge paper', 'bridge papers')} {'is itself a canon work' if len(canon_is_bridge) == 1 else 'are themselves canon works'}.\n"
         f"* **Low bridge bar.** The main definition needs only one reference on each side. Requiring at least 2 on each side gives {two50} bridge papers at N = {PRIMARY_N} instead of {one50} with merged records ({two50_0} instead of {len(bridges0)} unmerged). The main count should be read as the loosest version.\n"
         "* **Baseline.** The only baseline is the random reference draw above, which ignores topic. There is no comparison with a different pair of fields, so the bridge counts say how often both canons are cited, not whether that is more than usual for two related fields.\n"
