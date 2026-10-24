@@ -616,11 +616,20 @@ def main():
     canon_ids = sorted({w for w, _ in prim["top_p"]} | {w for w, _ in prim["top_l"]})
     info_rep = resolve_titles(canon_ids)
 
+    def _rec(m):
+        # metadata for a record: cache, then pool lookup, then the corpus CSV year and type for corpus records
+        for rec in (info_rep.get(m), pool_info.get(m)):
+            if rec and rec[1]:
+                return rec
+        if m in raw_meta.index and pd.notna(raw_meta.loc[m, "year"]):
+            return (raw_meta.loc[m, "title"], int(raw_meta.loc[m, "year"]), raw_meta.loc[m, "type"])
+        return info_rep.get(m) or pool_info.get(m) or (None, None, None)
+
     def _disp(w):
         # a merged work is shown with the earliest year among its merged records and the type of that earliest record
         cands = []
         for m in comps.get(w, [w]):
-            rec = info_rep.get(m) or pool_info.get(m)
+            rec = _rec(m)
             if rec and rec[1]:
                 cands.append((rec[1], m, rec[2]))
         if not cands:
@@ -775,7 +784,7 @@ def main():
     for rep in sorted(set(canon_ids)):
         if rep in comps:
             ms = comps[rep]
-            canon_group_rows.append((rep, len(ms), "; ".join(f"{m} ({_yr((info_rep.get(m) or pool_info.get(m) or (None, None, None))[1])})" for m in ms),
+            canon_group_rows.append((rep, len(ms), "; ".join(f"{m} ({_yr(_rec(m)[1])})" for m in ms),
                                      (info_rep.get(rep, (None,))[0] or ""), "; ".join(sorted(rules[rep]))))
     paper_groups = [(r, ms) for r, ms in comps.items() if any(m in raw_meta.index for m in ms)]
     n_paper_groups_merged = sum(1 for r, ms in paper_groups if sum(1 for m in ms if m in raw_meta.index) > 1)
