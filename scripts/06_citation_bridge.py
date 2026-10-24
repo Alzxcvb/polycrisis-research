@@ -477,6 +477,12 @@ def main():
     # ── merged records (primary) ──
     meta, members, refs = make_context(raw_meta, raw_members, raw_refs, gmap)
     # self references: a merged unit's reference list drops references that point to itself (another record of the same paper)
+    _grp = defaultdict(list)
+    for p_ in raw_meta.index:
+        _grp[gmap.get(p_, p_)].append(int(raw_meta.loc[p_, "cited_by_count"]))
+    n_multi_units = sum(1 for v in _grp.values() if len(v) > 1)
+    n_tied_units = sum(1 for v in _grp.values() if len(v) > 1 and sorted(v, reverse=True)[0] == sorted(v, reverse=True)[1])
+    print(f"Merged corpus paper groups: {n_multi_units}; with the top two records tied on cited_by_count: {n_tied_units}")
     meta_s, members_s, refs_s = make_context(raw_meta, raw_members, raw_refs, gmap, drop_self=False)
     n_self_units = sum(1 for u in refs_s if u in refs_s[u])
     wr_s = {w for w in meta_s.index if refs_s[w]}
@@ -762,7 +768,8 @@ def main():
         "For corpus papers the first author surname must also match. A record whose whole title equals the part before the colon of longer titles joins the most cited of those title groups. "
         f"Only works cited by at least {MIN_POOL_COUNT} corpus papers in either corpus are checked for duplicate records, because titles were looked up for those only. "
         "A merged cited work is shown with the earliest year among its merged records and the type of that earliest record, and canon work years, their medians and the canon type counts use that earliest year and type (the representative record's own year and type are kept in the canon CSVs as representative_year and representative_type). A merged work is counted once per citing paper, and merged corpus papers are one paper whose reference list is the union of their lists. "
-        "A merged corpus paper takes the publication year and the cited_by_count of its most cited member record (it is not summed). In the trend table it is therefore placed in that member's year, and in the top 15 ranking it is ranked by that member's count. "
+        "A merged corpus paper takes the publication year and the cited_by_count of its most cited member record (it is not summed); ties on cited_by_count are settled by the lowest OpenAlex id, and "
+        f"{n_tied_units} of the {n_multi_units} merged corpus paper groups have their top two records tied. In the trend table it is therefore placed in that member's year, and in the top 15 ranking it is ranked by that member's count. "
         f"Among the {len(bdf)} merged bridge papers, {merged_year_diff} have member records with different publication years, so their placement in the yearly table depends on this rule. "
         "Results are shown with merged records (primary) and with unmerged records.\n"
         f"* **Canon (primary).** For each corpus, count how many of its papers cite each work. Canon_P is the top {PRIMARY_N} works "

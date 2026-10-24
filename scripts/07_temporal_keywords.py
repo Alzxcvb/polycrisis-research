@@ -217,16 +217,24 @@ def _norm(t):
 
 def merge_records(df):
     """Keep one record per work within a corpus: same normalised title (12+ characters) and same
-    first author surname, same rule as 06's paper merge. Keeps the most cited record."""
+    first author surname, same rule as 06's paper merge. The record kept is chosen by an explicit,
+    order independent rule: highest cited_by_count, then most distinct terms, then lowest OpenAlex id.
+    Returns (merged frame, number of merged groups, number of groups whose top two records tie on cited_by_count)."""
     keys = {}
     for i, r in df.iterrows():
         nt = _norm(r["title"])
         a = str(r["authors"]) if isinstance(r["authors"], str) else ""
         first = a.split(";")[0].split("(")[0].strip().split()
         sn = _norm(first[-1]) if first else ""
-        keys[i] = (nt, sn) if len(nt) >= 12 and sn else ("unique", i)
-    out = df.assign(_k=pd.Series(keys)).sort_values(["_k", "cited_by_count"], ascending=[True, False], key=lambda c: c if c.name != "_k" else c.astype(str))
-    return out.drop_duplicates("_k").drop(columns="_k").sort_index()
+        keys[i] = "|".join((nt, sn)) if len(nt) >= 12 and sn else "unique|" + str(i)
+    t = df.assign(_k=pd.Series(keys), _nt=[len(x) for x in df["terms"]])
+    t = t.sort_values(["_k", "cited_by_count", "_nt", "openalex_id"], ascending=[True, False, False, True], kind="mergesort")
+    n_groups = n_tied = 0
+    for _k, g in t.groupby("_k", sort=True):
+        if len(g) > 1:
+            n_groups += 1
+            n_tied += int(g["cited_by_count"].iloc[0] == g["cited_by_count"].iloc[1])
+    return t.drop_duplicates("_k").drop(columns=["_k", "_nt"]).sort_index(), n_groups, n_tied
 
 
 def in_bin(df, lo, hi):
@@ -331,7 +339,8 @@ def main():
     rng = np.random.default_rng(SEED)
     full_tr = tie_robust(list(poly_t["terms"]), list(ltg_t["terms"]), rng, TIE_DRAWS)
     # sensitivity: also merge repeated records of the same work (06's paper rule)
-    poly_m, ltg_m = merge_records(poly), merge_records(ltg)
+    poly_m, grp_p, tied_p = merge_records(poly)
+    ltg_m, grp_l, tied_l = merge_records(ltg)
     n_merged_p, n_merged_l = len(poly) - len(poly_m), len(ltg) - len(ltg_m)
     n_tagged_merged_p = int(sum(1 for i in poly.index.difference(poly_m.index) if poly.loc[i, "terms"]))
     n_tagged_merged_l = int(sum(1 for i in ltg.index.difference(ltg_m.index) if ltg.loc[i, "terms"]))
@@ -585,7 +594,8 @@ def main():
     md.append(plain + "\n")
     md.append(f"Duplicate record sensitivity: this script keeps one row per OpenAlex id, while 06 finds more records of the same work. Applying the same title and first author rule here removes {n_merged_p} more polycrisis and {n_merged_l} more LtG records "
               f"({n_tagged_merged_p} and {n_tagged_merged_l} of them tagged). Tie robust overlap with those merged: " + "; ".join(f"{r.period} {r.merged_overlap_random_mean:.1f} ({r.merged_overlap_random_p5:.0f} to {r.merged_overlap_random_p95:.0f}) against {r.overlap_random_mean:.1f} unmerged" for r in odf.itertuples())
-              + f"; full period {fm['mean']:.1f} ({fm['p5']:.0f} to {fm['p95']:.0f}) against {full_tr['mean']:.1f}. The main tables use the id only rule.\n")
+              + f"; full period {fm['mean']:.1f} ({fm['p5']:.0f} to {fm['p95']:.0f}) against {full_tr['mean']:.1f}. The main tables use the id only rule. "
+              f"Which record of a merged work is kept: highest cited_by_count, then most distinct terms, then lowest OpenAlex id. Merged groups: {grp_p} polycrisis and {grp_l} LtG, of which {tied_p} and {tied_l} have the top two records tied on cited_by_count, so the second and third parts of the rule decided them.\n")
     md.append(f"Top {TOP_N} overlap with random tie breaking: " + ", ".join(f"{r.period} {r.overlap_random_mean:.1f} ({r.overlap_random_p5:.0f} to {r.overlap_random_p95:.0f})" for r in odf.itertuples()) + ". "
               f"Strict set overlap: " + ", ".join(f"{r.period} {r.overlap_strict}" for r in odf.itertuples()) + ". "
               f"Cosine: " + ", ".join(f"{r.period} {r.cosine_per_paper:.3f}" for r in odf.itertuples()) + ". "
