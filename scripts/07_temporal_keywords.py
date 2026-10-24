@@ -595,7 +595,7 @@ def main():
              "Periods differ a lot in paper counts, so read the details below with the size and tie caveats.")
     md.append("## Plain reading\n")
     md.append(plain + "\n")
-    md.append(f"Duplicate record sensitivity: this script keeps one row per OpenAlex id, while 06 finds more records of the same work. Applying the same title and first author rule here removes {n_merged_p} more polycrisis and {n_merged_l} more LtG records "
+    md.append(f"Duplicate record sensitivity: this script keeps one row per OpenAlex id, while 06 finds more records of the same work. Applying the same title and first author rule here (06 enforces the same first author check for every corpus paper merge) removes {n_merged_p} more polycrisis and {n_merged_l} more LtG records "
               f"({n_tagged_merged_p} and {n_tagged_merged_l} of them tagged). Tie robust overlap with those merged: " + "; ".join(f"{r.period} {r.merged_overlap_random_mean:.1f} ({r.merged_overlap_random_p5:.0f} to {r.merged_overlap_random_p95:.0f}) against {r.overlap_random_mean:.1f} unmerged" for r in odf.itertuples())
               + f"; full period {fm['mean']:.1f} ({fm['p5']:.0f} to {fm['p95']:.0f}) against {full_tr['mean']:.1f}. The main tables use the id only rule. "
               f"Which record of a merged work is kept: highest cited_by_count, then most distinct terms, then lowest OpenAlex id. Merged groups: {grp_p} polycrisis and {grp_l} LtG, of which {tied_p} and {tied_l} have the top two records tied on cited_by_count, so the second and third parts of the rule decided them.\n")

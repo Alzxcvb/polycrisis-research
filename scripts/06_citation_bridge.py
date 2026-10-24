@@ -249,10 +249,26 @@ def build_gmap(raw_meta, pool_info, ucount):
             x = parent[x]
         return x
 
-    def union(a, b):
+    # Corpus papers carry their first author surname; a union that would put two corpus papers with
+    # different (or missing) first author surnames in one group is refused. Cited works that are not
+    # corpus papers have no author data and merge on title alone.
+    sn_set = {}
+    for wid, row in raw_meta.iterrows():
+        sn_set[wid] = {first_surname(row["authors"]) or "?" + wid}
+    refused = Counter()
+
+    def union(a, b, rule=""):
         ra, rb = find(a), find(b)
-        if ra != rb:
-            parent[max(ra, rb)] = min(ra, rb)
+        if ra == rb:
+            return True
+        sa, sb = sn_set.get(ra, set()), sn_set.get(rb, set())
+        if sa and sb and sa != sb:
+            refused[rule] += 1
+            return False
+        new, old = min(ra, rb), max(ra, rb)
+        parent[old] = new
+        sn_set[new] = sa | sb
+        return True
 
     rule_of = defaultdict(set)   # pair tag collected per id, resolved to rep below
     # (a) papers: same normalised title and same first author surname
@@ -263,7 +279,7 @@ def build_gmap(raw_meta, pool_info, ucount):
             keyp[(nt, sn)].append(wid)
     for ids in keyp.values():
         for other in ids[1:]:
-            union(ids[0], other)
+            union(ids[0], other, "paper title and first author")
             rule_of[other].add("paper title and first author")
             rule_of[ids[0]].add("paper title and first author")
     # (b) cited works: same normalised full title
@@ -279,18 +295,26 @@ def build_gmap(raw_meta, pool_info, ucount):
                 if len(st) >= MIN_TITLE:
                     stems[st].add(nt)
     for ids in keyw.values():
-        for other in ids[1:]:
-            union(ids[0], other)
-            rule_of[other].add("same normalised title")
-            rule_of[ids[0]].add("same normalised title")
+        for j, other in enumerate(ids):
+            for first in ids[:j]:
+                if union(first, other, "same normalised title"):
+                    rule_of[other].add("same normalised title")
+                    rule_of[first].add("same normalised title")
     # (c) a bare title equal to the part before the colon of longer titles joins the most cited such group
     for nt, ids in sorted(keyw.items()):
         if nt in stems:   # a title equal to the part before the colon of longer titles
             cands = sorted(stems[nt], key=lambda k: (-sum(ucount.get(i, 0) for i in keyw[k]), k))
             if cands and cands[0] != nt:
-                union(ids[0], keyw[cands[0]][0])
-                for i in ids + keyw[cands[0]][:1]:
-                    rule_of[i].add(f"bare title joined the most cited of {len(cands)} longer title group(s)")
+                done = False
+                for a_ in ids:
+                    for b_ in keyw[cands[0]]:
+                        if union(a_, b_, "bare title"):
+                            rule_of[a_].add(f"bare title joined the most cited of {len(cands)} longer title group(s)")
+                            rule_of[b_].add(f"bare title joined the most cited of {len(cands)} longer title group(s)")
+                            done = True
+                            break
+                    if done:
+                        break
     comp = defaultdict(list)
     for x in list(parent):
         comp[find(x)].append(x)
@@ -304,7 +328,7 @@ def build_gmap(raw_meta, pool_info, ucount):
         rules[rep] = set().union(*[rule_of.get(i, set()) for i in ms])
         for i in ms:
             gmap[i] = rep
-    return gmap, comps, rules
+    return gmap, comps, rules, refused
 
 
 def make_context(raw_meta, raw_members, raw_refs, gmap, drop_self=True):
@@ -445,7 +469,7 @@ def headline(raw_meta, raw_members, raw_refs, merged=True):
     pc, lc = ref_counts(raw_members["polycrisis"], raw_refs), ref_counts(raw_members["ltg"], raw_refs)
     uc = Counter({w: pc[w] + lc[w] for w in set(pc) | set(lc)})
     pool = sorted(w for w in set(pc) | set(lc) if pc[w] >= MIN_POOL_COUNT or lc[w] >= MIN_POOL_COUNT)
-    gm, _, _ = build_gmap(raw_meta, resolve_titles(pool), uc)
+    gm, _, _, _ = build_gmap(raw_meta, resolve_titles(pool), uc)
     mt, mm, mr = make_context(raw_meta, raw_members, raw_refs, gm)
     wr = {w for w in mt.index if mr[w]}
     cm = build_canons("refs", PRIMARY_N, mt, mm, mr)
@@ -473,9 +497,12 @@ def main():
     pool_ids = sorted({w for w in set(pcount) | set(lcount) if pcount[w] >= MIN_POOL_COUNT or lcount[w] >= MIN_POOL_COUNT})
     print(f"Works cited by at least {MIN_POOL_COUNT} papers in either corpus (checked for duplicate records): {len(pool_ids)}")
     pool_info = resolve_titles(pool_ids)
-    gmap, comps, rules = build_gmap(raw_meta, pool_info, ucount)
+    gmap, comps, rules, refused_unions = build_gmap(raw_meta, pool_info, ucount)
     print(f"Merged groups: {len(comps)} (ids merged: {len(gmap)})")
 
+    bad_groups = [r for r, ms in comps.items() if len({first_surname(raw_meta.loc[m, "authors"]) or "?" + m for m in ms if m in raw_meta.index}) > 1]
+    print(f"Merged groups containing corpus papers with different first author surnames (must be 0): {len(bad_groups)}")
+    assert not bad_groups
     # ── merged records (primary) ──
     meta, members, refs = make_context(raw_meta, raw_members, raw_refs, gmap)
     # self references: a merged unit's reference list drops references that point to itself (another record of the same paper)
@@ -704,8 +731,10 @@ def main():
     # ── Results note ──────────────────────────────────────────────────────────
     top15 = bdf.head(15)
     cut15 = int(bdf.cited_by_count.iloc[min(14, len(bdf) - 1)])
-    top15 = bdf[bdf.cited_by_count >= cut15]       # includes every row tied with rank 15
+    top15 = bdf[bdf.cited_by_count >= cut15]       # includes every row tied with the 15th row
     n_tied15 = int((bdf.cited_by_count == cut15).sum())
+    rank_of = {r.openalex_id: 1 + int((bdf.cited_by_count > r.cited_by_count).sum()) for r in bdf.itertuples()}   # standard competition ranking
+    rank15 = 1 + int((bdf.cited_by_count > cut15).sum())
     shared_rows = []
     for w in sorted(prim["shared"], key=lambda w: (-(prim["counts_p"].get(w, 0) + prim["counts_l"].get(w, 0)), w)):
         t, y, ty = info.get(w, (None, None, None))
@@ -767,7 +796,7 @@ def main():
         "(the refined pull, not the noisy `ltg_papers.csv`). Papers are deduplicated by OpenAlex id across corpora.\n"
         "* **Reference list.** The union of the refetched list and the list saved in the original raw file. Both are OpenAlex records of the same work's references, and the two differ for some papers (see Reference coverage).\n"
         f"* **Record merge (primary).** OpenAlex often holds several records of the same work, for example the Limits to Growth book. Before anything is counted, records are merged into one work when they have the same normalised title (lowercase, punctuation removed, spaces collapsed, at least {MIN_TITLE} characters). "
-        "For corpus papers the first author surname must also match. A record whose whole title equals the part before the colon of longer titles joins the most cited of those title groups. "
+        "For corpus papers the first author surname must also match in every rule below, including the title only and bare title rules: a merge that would put two corpus papers with different first author surnames in one group is refused. Cited works that are not corpus papers have no author data and merge on title alone. A record whose whole title equals the part before the colon of longer titles joins the most cited of those title groups. "
         f"Only works cited by at least {MIN_POOL_COUNT} corpus papers in either corpus are checked for duplicate records, because titles were looked up for those only. "
         "A merged cited work is shown with the earliest year among its merged records and the type of that earliest record, and canon work years, their medians and the canon type counts use that earliest year and type (the representative record's own year and type are kept in the canon CSVs as representative_year and representative_type). A merged work is counted once per citing paper, and merged corpus papers are one paper whose reference list is the union of their lists. "
         "A merged corpus paper takes the publication year and the cited_by_count of its most cited member record (it is not summed); ties on cited_by_count are settled by the lowest OpenAlex id, and "
@@ -787,6 +816,7 @@ def main():
     md.append("## Merged records\n")
     md.append(f"{len(comps)} groups of records were merged ({len(gmap)} ids): {n_paper_groups_merged} groups contain more than one corpus paper record and {n_work_only} contain at most one corpus paper record (cited works). "
               f"The corpus has {len(all0)} unique ids before merging and {len(all_ids)} papers after. {n_in_merged_bridge} of the {len(bdf)} bridge papers are merged records. "
+              f"Title matches refused because the corpus papers had different first author surnames: {sum(refused_unions.values())} ({', '.join(f'{k} {v}' for k, v in sorted(refused_unions.items())) or 'none'}). "
               "Merged groups among the canon works (both top lists, before shared removal) are listed here. The representative id is the record cited most often. "
               f"The bare title rule is a heuristic: {n_ambiguous} of all groups used it with more than one longer title to choose from (it picks the most cited), and {n_canon_ambiguous} of the groups listed here did, so check those rows.\n")
     md.append(md_table(["Representative id", "Records", "Member ids (year)", "Title", "Rule"], canon_group_rows))
@@ -864,11 +894,11 @@ def main():
                          f"{r['tied_polycrisis']} for {r['open_slots_polycrisis']} / {r['tied_ltg']} for {r['open_slots_ltg']}") for r in tie_rows]))
     md.append("\n")
     top_k = min(15, len(bdf))
-    md.append(f"## Top {top_k} bridge papers by cited_by_count, with rows tied at rank {top_k} ({len(top15)} rows; N = {PRIMARY_N}, most referenced works, merged records)\n")
-    md.append(f"Rank {top_k} has cited_by_count {cut15}, shared by {n_tied15} bridge papers, so all tied rows are shown ({len(top15)} rows). Ties are ordered by OpenAlex id.\n")
+    md.append(f"## Top {top_k} bridge papers by cited_by_count, with all rows tied at the last rank ({len(top15)} rows; N = {PRIMARY_N}, most referenced works, merged records)\n")
+    md.append(f"Standard competition ranking: papers with the same cited_by_count share a rank. The last shown rank is {rank15}, with cited_by_count {cut15}, shared by {n_tied15} bridge papers, so all of them are shown ({len(top15)} rows). Rows with the same rank are ordered by OpenAlex id.\n")
     md.append(md_table(["Rank", "Title", "Year", "Corpus", "Refs to Canon_P", "Refs to Canon_L", "Cited by"],
-                       [(i, r.title, int(r.year) if pd.notna(r.year) else "", r.corpus, r.n_refs_canon_polycrisis,
-                         r.n_refs_canon_ltg, r.cited_by_count) for i, r in enumerate(top15.itertuples(), 1)]))
+                       [(rank_of[r.openalex_id], r.title, int(r.year) if pd.notna(r.year) else "", r.corpus, r.n_refs_canon_polycrisis,
+                         r.n_refs_canon_ltg, r.cited_by_count) for r in top15.itertuples()]))
     md.append(f"\n## Shared canon (N = {PRIMARY_N}, merged records): {len(prim['shared'])} works in both top lists\n")
     md.append(md_table(["Work id", "Title", "Year", "Polycrisis papers citing", "LtG papers citing", "Merged record ids"], shared_rows))
     md.append("\n## Trend over time\n")
