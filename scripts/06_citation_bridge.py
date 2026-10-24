@@ -96,7 +96,9 @@ def load():
         refs[wid] = list(dict.fromkeys(r + o))          # union of refetched and saved lists
         old_refs[wid] = list(dict.fromkeys(r or o))     # previous rule: refetched if nonempty, else saved
         saved_only[wid] = list(dict.fromkeys(o))
-        longer[wid] = list(dict.fromkeys(max([r, o], key=len)))
+        longer[wid] = list(dict.fromkeys(max([r, o], key=len)))     # on equal length the refetched list wins
+        if r and len(r) == len(o) and set(r) != set(o):
+            st["_equal length, different set"] += 1
         if r and o:
             sr, so = set(r), set(o)
             st["both lists nonempty"] += 1
@@ -793,11 +795,12 @@ def main():
     md.append(f"\nSelf references: when a merged unit's reference list is built, a reference that points to the unit itself (another record of the same paper) is dropped, which affects {n_self_units} units; keeping them gives {self_kept[1]} bridge papers with one reference per side and {self_kept[2]} with two at N = {PRIMARY_N}, against {len(bdf)} and {two50} with them dropped.\n")
     md.append("\n## Reference coverage (merged records)\n")
     md.append(md_table(["Set", "Papers", "With reference list", "Share", "Total references", "Mean per paper with list", "Distinct works cited"], cov_rows))
-    md.append("\nSaved list versus refetched list (unique papers, before merging): " + "; ".join(f"{k} {v}" for k, v in sorted(list_stats.items())) + ". "
+    md.append("\nSaved list versus refetched list (unique papers, before merging): " + "; ".join(f"{k} {v}" for k, v in sorted(list_stats.items()) if not k.startswith("_")) + ". "
               f"Under the union rule {n_changed_lists} papers have a different reference list than under the previous rule (refetched list if nonempty, else saved list). "
               f"Effect on the headline at N = {PRIMARY_N}, one reference per side: merged records {old_head[('merged', 1)]} of {old_head[('merged', 'den')]} before, {len(bdf)} of {len(with_refs)} now; "
               f"unmerged records {old_head[('unmerged', 1)]} of {old_head[('unmerged', 'den')]} before, {len(bridges0)} of {len(with0)} now. "
               f"Two references per side: merged {old_head[('merged', 2)]} before, {two50} now; unmerged {old_head[('unmerged', 2)]} before, {two50_0} now. "
+              f"For the longer of the two lists rule, when the two lists have equal length the refetched list is used; this applies to {list_stats['_equal length, different set']} papers whose two lists have equal length but are different sets. "
               "Other rules for comparison (unmerged, N = 50, one reference per side): " + "; ".join(f"{k} {v[('unmerged', 1)]} of {v[('unmerged', 'den')]} (two references per side {v[('unmerged', 2)]})" for k, v in alt_heads.items())
               + f"; union (primary) {len(bridges0)} of {len(with0)} ({two50_0}). The choice of rule moves the unmerged count by up to {max(abs(v[('unmerged', 1)] - len(bridges0)) for v in alt_heads.values())} bridge papers.\n")
     md.append(f"\nPapers in both corpora: {len(both)}. Unique papers: {len(all_ids)}. "
