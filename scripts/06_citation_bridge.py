@@ -424,7 +424,7 @@ def sens_grid(meta, members, refs, with_refs, records):
                     br = find_bridges(cc, refs, with_refs, mr)
                     rows.append({"records": records, "variant": lab_, "min_refs_each_canon": mr, "N": n,
                                  "canon_P_size": len(cc["eff_p"]), "canon_L_size": len(cc["eff_l"]),
-                                 "shared_canon_size": len(c["shared"]), "bridge_count": len(br),
+                                 "shared_canon_size": len(c["shared"]), "shared_canon_removed": len(c["shared"]) if lab_ == label else 0, "bridge_count": len(br),
                                  "denominator": len(with_refs), "share": round(len(br) / len(with_refs), 4)})
     return rows, canons
 
@@ -710,7 +710,7 @@ def main():
         shared_rows.append((w, t, y, prim["counts_p"].get(w, 0), prim["counts_l"].get(w, 0), "; ".join(members_of(w))))
     c50 = prim
     t50_1 = [r for r in tie_rows if r["N"] == PRIMARY_N and r["min_refs_each_canon"] == 1][0]
-    sens_rows = [(r.records, r.variant, r.min_refs_each_canon, r.N, r.shared_canon_size, r.canon_P_size, r.canon_L_size,
+    sens_rows = [(r.records, r.variant, r.min_refs_each_canon, r.N, r.shared_canon_removed, r.canon_P_size, r.canon_L_size,
                   r.bridge_count, r.denominator, pct(r.bridge_count, r.denominator))
                  for r in sens_df.assign(_o=sens_df.variant.map({"most referenced works": 0, "most referenced works, shared canon kept": 1, "most cited papers in corpus": 2}))
                  .sort_values(["records", "_o", "min_refs_each_canon", "N"]).itertuples()]
@@ -803,7 +803,7 @@ def main():
     md.append(f"\nPapers in both corpora: {len(both)}. Unique papers: {len(all_ids)}. "
               f"Papers with a reference list: {len(with_refs)}, which is the denominator below ({len(with0)} before merging).\n")
     md.append("## Counts at each N and variant\n")
-    md.append(md_table(["Records", "Variant", "Min refs to each canon", "N", "Shared canon removed", "Canon_P size after removal", "Canon_L size after removal",
+    md.append(md_table(["Records", "Variant", "Min refs to each canon", "N", "Shared works removed", "Canon_P size after removal", "Canon_L size after removal",
                         "Bridge papers", "Denominator", "Share"], sens_rows))
     md.append(f"\nPrimary result (merged records, most referenced works, N = {PRIMARY_N}): {len(bdf)} bridge papers out of {len(with_refs)} "
               f"papers with a reference list ({pct(len(bdf), len(with_refs))}). By corpus membership: "
@@ -831,7 +831,7 @@ def main():
         interp = (f"Of the {len(cat)} rows, {nb_} are below the within corpus null range, {ni_} are inside it and {na_} are above it. "
                   + "Rows below: " + (", ".join(f"N = {n} with {m} reference{'s' if m > 1 else ''} per side" for (n, m, *_), c in zip(null_rows, cat) if c == "below") or "none") + ". "
                   + "Rows above: " + (", ".join(f"N = {n} with {m} reference{'s' if m > 1 else ''} per side" for (n, m, *_), c in zip(null_rows, cat) if c == "above") or "none") + ". "
-                  "Where the observed count is inside or above the range, the count is not lower than each field citing its own literature would give; where it is below, it is lower than that.")
+                  "Inside means within the 5th to 95th percentile range of the within corpus null.")
     md.append("\n" + interp + " The model ignores topical clustering inside each field, which any real literature has, so being near or below it is expected to some degree.\n")
     md.append("Secondary null (pooled): the same draw, but from the pooled references of both corpora together. Real papers live in one corpus, so this null is shown for comparison only.\n")
     md.append(md_table(["N", "Min refs to each canon", "Observed bridge papers", "Pooled null mean", "5th percentile", "95th percentile", "Maximum"],

@@ -80,7 +80,7 @@ Papers in both corpora: 7. Unique papers: 2453. Papers with a reference list: 11
 
 ## Counts at each N and variant
 
-| Records | Variant | Min refs to each canon | N | Shared canon removed | Canon_P size after removal | Canon_L size after removal | Bridge papers | Denominator | Share |
+| Records | Variant | Min refs to each canon | N | Shared works removed | Canon_P size after removal | Canon_L size after removal | Bridge papers | Denominator | Share |
 |:--|:--|:--|:--|:--|:--|:--|:--|:--|:--|
 | merged | most referenced works | 1 | 25 | 3 | 22 | 22 | 31 | 1119 | 2.8% |
 | merged | most referenced works | 1 | 50 | 7 | 43 | 43 | 52 | 1119 | 4.6% |
@@ -88,12 +88,12 @@ Papers in both corpora: 7. Unique papers: 2453. Papers with a reference list: 11
 | merged | most referenced works | 2 | 25 | 3 | 22 | 22 | 5 | 1119 | 0.4% |
 | merged | most referenced works | 2 | 50 | 7 | 43 | 43 | 8 | 1119 | 0.7% |
 | merged | most referenced works | 2 | 100 | 13 | 87 | 87 | 10 | 1119 | 0.9% |
-| merged | most referenced works, shared canon kept | 1 | 25 | 3 | 25 | 25 | 207 | 1119 | 18.5% |
-| merged | most referenced works, shared canon kept | 1 | 50 | 7 | 50 | 50 | 239 | 1119 | 21.4% |
-| merged | most referenced works, shared canon kept | 1 | 100 | 13 | 100 | 100 | 274 | 1119 | 24.5% |
-| merged | most referenced works, shared canon kept | 2 | 25 | 3 | 25 | 25 | 42 | 1119 | 3.8% |
-| merged | most referenced works, shared canon kept | 2 | 50 | 7 | 50 | 50 | 77 | 1119 | 6.9% |
-| merged | most referenced works, shared canon kept | 2 | 100 | 13 | 100 | 100 | 102 | 1119 | 9.1% |
+| merged | most referenced works, shared canon kept | 1 | 25 | 0 | 25 | 25 | 207 | 1119 | 18.5% |
+| merged | most referenced works, shared canon kept | 1 | 50 | 0 | 50 | 50 | 239 | 1119 | 21.4% |
+| merged | most referenced works, shared canon kept | 1 | 100 | 0 | 100 | 100 | 274 | 1119 | 24.5% |
+| merged | most referenced works, shared canon kept | 2 | 25 | 0 | 25 | 25 | 42 | 1119 | 3.8% |
+| merged | most referenced works, shared canon kept | 2 | 50 | 0 | 50 | 50 | 77 | 1119 | 6.9% |
+| merged | most referenced works, shared canon kept | 2 | 100 | 0 | 100 | 100 | 102 | 1119 | 9.1% |
 | merged | most cited papers in corpus | 1 | 25 | 0 | 25 | 25 | 14 | 1119 | 1.3% |
 | merged | most cited papers in corpus | 1 | 50 | 0 | 50 | 50 | 14 | 1119 | 1.3% |
 | merged | most cited papers in corpus | 1 | 100 | 0 | 100 | 100 | 15 | 1119 | 1.3% |
@@ -106,12 +106,12 @@ Papers in both corpora: 7. Unique papers: 2453. Papers with a reference list: 11
 | unmerged | most referenced works | 2 | 25 | 3 | 22 | 22 | 5 | 1146 | 0.4% |
 | unmerged | most referenced works | 2 | 50 | 7 | 43 | 43 | 10 | 1146 | 0.9% |
 | unmerged | most referenced works | 2 | 100 | 14 | 86 | 86 | 7 | 1146 | 0.6% |
-| unmerged | most referenced works, shared canon kept | 1 | 25 | 3 | 25 | 25 | 123 | 1146 | 10.7% |
-| unmerged | most referenced works, shared canon kept | 1 | 50 | 7 | 50 | 50 | 165 | 1146 | 14.4% |
-| unmerged | most referenced works, shared canon kept | 1 | 100 | 14 | 100 | 100 | 208 | 1146 | 18.2% |
-| unmerged | most referenced works, shared canon kept | 2 | 25 | 3 | 25 | 25 | 33 | 1146 | 2.9% |
-| unmerged | most referenced works, shared canon kept | 2 | 50 | 7 | 50 | 50 | 75 | 1146 | 6.5% |
-| unmerged | most referenced works, shared canon kept | 2 | 100 | 14 | 100 | 100 | 92 | 1146 | 8.0% |
+| unmerged | most referenced works, shared canon kept | 1 | 25 | 0 | 25 | 25 | 123 | 1146 | 10.7% |
+| unmerged | most referenced works, shared canon kept | 1 | 50 | 0 | 50 | 50 | 165 | 1146 | 14.4% |
+| unmerged | most referenced works, shared canon kept | 1 | 100 | 0 | 100 | 100 | 208 | 1146 | 18.2% |
+| unmerged | most referenced works, shared canon kept | 2 | 25 | 0 | 25 | 25 | 33 | 1146 | 2.9% |
+| unmerged | most referenced works, shared canon kept | 2 | 50 | 0 | 50 | 50 | 75 | 1146 | 6.5% |
+| unmerged | most referenced works, shared canon kept | 2 | 100 | 0 | 100 | 100 | 92 | 1146 | 8.0% |
 | unmerged | most cited papers in corpus | 1 | 25 | 0 | 25 | 25 | 13 | 1146 | 1.1% |
 | unmerged | most cited papers in corpus | 1 | 50 | 0 | 50 | 50 | 13 | 1146 | 1.1% |
 | unmerged | most cited papers in corpus | 1 | 100 | 0 | 100 | 100 | 14 | 1146 | 1.2% |
@@ -138,7 +138,7 @@ Primary null (within corpus): each tested paper keeps its own number of referenc
 | 100 | 1 | 59 | 89.7 | 76 | 104 | 119 |
 | 100 | 2 | 10 | 12.5 | 8 | 17 | 21 |
 
-Of the 6 rows, 3 are below the within corpus null range, 3 are inside it and 0 are above it. Rows below: N = 25 with 1 reference per side, N = 50 with 1 reference per side, N = 100 with 1 reference per side. Rows above: none. Where the observed count is inside or above the range, the count is not lower than each field citing its own literature would give; where it is below, it is lower than that. The model ignores topical clustering inside each field, which any real literature has, so being near or below it is expected to some degree.
+Of the 6 rows, 3 are below the within corpus null range, 3 are inside it and 0 are above it. Rows below: N = 25 with 1 reference per side, N = 50 with 1 reference per side, N = 100 with 1 reference per side. Rows above: none. Inside means within the 5th to 95th percentile range of the within corpus null. The model ignores topical clustering inside each field, which any real literature has, so being near or below it is expected to some degree.
 
 Secondary null (pooled): the same draw, but from the pooled references of both corpora together. Real papers live in one corpus, so this null is shown for comparison only.
 
