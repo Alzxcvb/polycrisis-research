@@ -492,8 +492,8 @@ def main():
     first = odf.iloc[0]
     ctrl_rows = [(r.period, f"{r.overlap_random_mean:.1f}", f"{r.matched_overlap_mean:.1f}", f"{r.matched_overlap_p5:.0f} to {r.matched_overlap_p95:.0f}", f"{r.overlap_random_mean - r.matched_overlap_mean:+.1f}", r.matched_n_per_corpus)
                  for r in odf.itertuples()]
-    equal_note = (f"Size matched control: each row draws the same number of papers from each corpus, without replacement ({N_SUBSAMPLES} draws, random tie breaking): {', '.join(f'{r.matched_n_per_corpus} for {r.period}' for r in odf.itertuples())}"
-                  + (f"; for the single year rows {', '.join(f'{r.matched_n_per_corpus} for {r.period}' for r in oref.itertuples())}" if len(oref) else "") + f" (the smaller of {CONTROL_N} and the tagged papers available in each corpus). "
+    equal_note = (f"Size matched control: each row draws the same number of papers from each corpus, without replacement ({N_SUBSAMPLES} draws, random tie breaking): {', '.join(f'{int(r.matched_n_per_corpus)} for {r.period}' for r in odf.itertuples())}"
+                  + (f"; for the single year rows {', '.join(f'{int(r.matched_n_per_corpus)} for {r.period}' for r in oref.itertuples())}" if len(oref) else "") + f" (the smaller of {CONTROL_N} and the tagged papers available in each corpus). "
                   + "Overlap at that size: " + "; ".join(f"{r.period} {r.matched_overlap_mean:.1f} (5th to 95th {r.matched_overlap_p5:.0f} to {r.matched_overlap_p95:.0f})" for r in odf.itertuples())
                   + ". Size matched cosine: " + "; ".join(f"{r.period} {r.matched_cos_mean:.3f} (5th to 95th {r.matched_cos_p5:.3f} to {r.matched_cos_p95:.3f}) against observed {r.cosine_per_paper:.3f}" for r in odf.itertuples())
                   + ". Size matched weighted Jaccard: " + "; ".join(f"{r.period} {r.matched_wj_mean:.3f} (5th to 95th {r.matched_wj_p5:.3f} to {r.matched_wj_p95:.3f}) against observed {r.weighted_jaccard_share:.3f}" for r in odf.itertuples())
@@ -557,7 +557,7 @@ def main():
         md.append(f"\nSingle years for reference only, not used for the main reading (LtG tagged papers used: {', '.join(str(int(r.n_ltg)) + ' in ' + r.period for r in oref.itertuples())}, under 50, so treat as indicative only):\n")
         md.append(md_table(["Period", "Polycrisis used", "LtG used", "Overlap, random ties: mean (5th to 95th)", "Overlap, strict set", "Weighted Jaccard", "Cosine", "Size matched mean"],
                            [(r.period, r.n_polycrisis, r.n_ltg, f"{r.overlap_random_mean:.1f} ({r.overlap_random_p5:.0f} to {r.overlap_random_p95:.0f})", r.overlap_strict,
-                             f"{r.weighted_jaccard_share:.3f}", f"{r.cosine_per_paper:.3f}", f"{r.matched_overlap_mean:.1f} (n = {r.matched_n_per_corpus} per corpus)") for r in oref.itertuples()]))
+                             f"{r.weighted_jaccard_share:.3f}", f"{r.cosine_per_paper:.3f}", f"{r.matched_overlap_mean:.1f} (n = {int(r.matched_n_per_corpus)} per corpus)") for r in oref.itertuples()]))
     md.append("\n### New and shared keywords by period\n")
     md.append("These lists use the strict sets only: terms whose count is above the cutoff count, so tied terms are left out. Terms at the cutoff could move in or out, so a keyword missing here may still be near the edge. The tie table above gives how many terms are tied in each period. "
               "Definition: a term has entered when it is in this period's strict set and was not among the previous period's top 50 candidates, meaning the previous strict set plus every term tied at the previous cutoff. "
