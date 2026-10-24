@@ -305,7 +305,7 @@ def build_gmap(raw_meta, pool_info, ucount):
     return gmap, comps, rules
 
 
-def make_context(raw_meta, raw_members, raw_refs, gmap):
+def make_context(raw_meta, raw_members, raw_refs, gmap, drop_self=True):
     g = lambda x: gmap.get(x, x)
     unit_members = defaultdict(list)
     for p in raw_meta.index:
@@ -315,7 +315,7 @@ def make_context(raw_meta, raw_members, raw_refs, gmap):
     for u in sorted(unit_members):
         ps = sorted(unit_members[u], key=lambda p: (-int(raw_meta.loc[p, "cited_by_count"]), p))
         allr = [g(x) for p in ps for x in raw_refs[p]]
-        refs[u] = [x for x in dict.fromkeys(allr) if x != u]
+        refs[u] = [x for x in dict.fromkeys(allr) if not (drop_self and x == u)]
         b = raw_meta.loc[ps[0]]
         rows[u] = {"title": b["title"], "year": b["year"], "date": b["date"], "cited_by_count": int(b["cited_by_count"]),
                    "type": b["type"], "paper_id": ps[0], "merged_ids": "; ".join(sorted(ps))}
@@ -476,6 +476,13 @@ def main():
 
     # ── merged records (primary) ──
     meta, members, refs = make_context(raw_meta, raw_members, raw_refs, gmap)
+    # self references: a merged unit's reference list drops references that point to itself (another record of the same paper)
+    meta_s, members_s, refs_s = make_context(raw_meta, raw_members, raw_refs, gmap, drop_self=False)
+    n_self_units = sum(1 for u in refs_s if u in refs_s[u])
+    wr_s = {w for w in meta_s.index if refs_s[w]}
+    c_s = build_canons("refs", PRIMARY_N, meta_s, members_s, refs_s)
+    self_kept = {m: len(find_bridges(c_s, refs_s, wr_s, m)) for m in (1, 2)}
+    print(f"Units with a self reference: {n_self_units}; bridges with self references kept at N={PRIMARY_N}: {self_kept}")
     both = members["polycrisis"] & members["ltg"]
     all_ids = set(meta.index)
     with_refs = {w for w in all_ids if refs[w]}
@@ -776,6 +783,7 @@ def main():
     md.append(md_table(["Representative id", "Records", "Member ids (year)", "Title", "Rule"], canon_group_rows))
     md.append("\nBridge papers that are merged records of the same paper:\n")
     md.append(md_table(["Representative id", "Member ids", "Title", "Year"], bridge_merge_rows))
+    md.append(f"\nSelf references: when a merged unit's reference list is built, a reference that points to the unit itself (another record of the same paper) is dropped, which affects {n_self_units} units; keeping them gives {self_kept[1]} bridge papers with one reference per side and {self_kept[2]} with two at N = {PRIMARY_N}, against {len(bdf)} and {two50} with them dropped.\n")
     md.append("\n## Reference coverage (merged records)\n")
     md.append(md_table(["Set", "Papers", "With reference list", "Share", "Total references", "Mean per paper with list", "Distinct works cited"], cov_rows))
     md.append("\nSaved list versus refetched list (unique papers, before merging): " + "; ".join(f"{k} {v}" for k, v in sorted(list_stats.items())) + ". "

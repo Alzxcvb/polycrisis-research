@@ -62,6 +62,9 @@ Bridge papers that are merged records of the same paper:
 | W4414951747 | W4414951747; W7124276256 | Flourishing Circularity: A Resource Assessment Framework for Sustainable Strategic Management | 2025 |
 | W7127068856 | W7127068856; W7129051668 | Boundaries, Limits, Global Threats – How Can the Impacts of Global Synthetic Pollutants Be Reduced? | 2026 |
 
+Self references: when a merged unit's reference list is built, a reference that points to the unit itself (another record of the same paper) is dropped, which affects 22 units; keeping them gives 52 bridge papers with one reference per side and 8 with two at N = 50, against 52 and 8 with them dropped.
+
+
 ## Reference coverage (merged records)
 
 | Set | Papers | With reference list | Share | Total references | Mean per paper with list | Distinct works cited |

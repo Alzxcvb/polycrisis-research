@@ -406,7 +406,18 @@ def main():
             prev = (sp_, sl_, tr["strict_p"] | set(tr["parts_p"][2]), tr["strict_l"] | set(tr["parts_l"][2]), strict_sh, tr["strict_p"], tr["strict_l"])
             rows.append(row)
             print({k_: v for k_, v in row.items() if not isinstance(v, str)})
-    odf_all = pd.DataFrame(rows)
+    full_row = {"tier": "full_period", "period": "full period (tagged papers, any year)",
+                "n_polycrisis_all": len(poly), "n_ltg_all": len(ltg), "n_polycrisis": n_full_p, "n_ltg": n_full_l,
+                "overlap_top50": ov_full, "jaccard_top50": jac_full, "weighted_jaccard_share": wj_full, "cosine_per_paper": cos_full,
+                "overlap_strict": full_tr["strict"], "overlap_random_mean": full_tr["mean"],
+                "overlap_random_p5": full_tr["p5"], "overlap_random_p95": full_tr["p95"],
+                "cutoff_count_polycrisis": full_tr["parts_p"][0], "tied_polycrisis": len(full_tr["parts_p"][2]), "slots_polycrisis": full_tr["parts_p"][3],
+                "cutoff_count_ltg": full_tr["parts_l"][0], "tied_ltg": len(full_tr["parts_l"][2]), "slots_ltg": full_tr["parts_l"][3],
+                "merged_overlap_strict": fm["strict"], "merged_overlap_random_mean": fm["mean"],
+                "merged_overlap_random_p5": fm["p5"], "merged_overlap_random_p95": fm["p95"],
+                "shared_keywords": "; ".join(sorted(tp_full & tl_full)),
+                "shared_strict": "; ".join(sorted(full_tr["strict_p"] & full_tr["strict_l"]))}
+    odf_all = pd.DataFrame(rows + [full_row])
     odf_all.round(4).to_csv(DATA_DIR / "temporal_keyword_overlap.csv", index=False)
     odf = odf_all[odf_all.tier == "main"].reset_index(drop=True)
     oref = odf_all[odf_all.tier == "reference_only"].reset_index(drop=True)
@@ -539,7 +550,7 @@ def main():
     for r in odf.itertuples():
         kw_rows.append((r.period, r.shared_strict, r.newly_shared_strict, r.entered_polycrisis_strict, r.entered_ltg_strict))
     md.append(md_table(["Period", "Shared keywords (strict)", "Newly shared since previous period (strict)", "Entered polycrisis top 50 (strict)", "Entered LtG top 50 (strict)"], kw_rows))
-    md.append("\nThe full top 50 lists (alphabetical ties) for every period and corpus are in `data/temporal_top_keywords.csv`; the CSV `data/temporal_keyword_overlap.csv` also holds the all tied versions of these lists.\n")
+    md.append("\nThe full top 50 lists (alphabetical ties) for every period and corpus are in `data/temporal_top_keywords.csv`. The CSV `data/temporal_keyword_overlap.csv` has one row per period and one full period row. The columns shared_keywords, entered_polycrisis_top50, entered_ltg_top50 and newly_shared list terms with alphabetical tie breaking, and the columns shared_strict, entered_polycrisis_strict, entered_ltg_strict and newly_shared_strict list the strict versions used in the table above.\n")
     rmx = int(np.argmax(rm)); rmn = int(np.argmin(rm))
     mrg = list(odf.merged_overlap_random_mean)
     mrg_last = mrg[-1]
@@ -548,8 +559,8 @@ def main():
     sy_txt = ", ".join(f"{pname} {v:.1f}" for pname, v in sy)
     single_vals = [v for _, v in sy] + [rm[-1]]
     plain = (f"In plain terms: the highest tie robust overlap of the two fields' top {TOP_N} keywords is in {odf.period.iloc[rmx]} ({rm[rmx]:.1f} shared keywords), and the lowest is in {odf.period.iloc[rmn]} ({rm[rmn]:.1f}). "
-             f"That two year bin pools years that look different on their own: the single year rows give {sy_txt}, and {odf.period.iloc[-1]} gives {rm[-1]:.1f}. "
-             f"The highest single year or last period value is {max(single_vals):.1f}, against the pooled {rm[rmx]:.1f}, so the pooled peak is partly a pooling and sample size effect. "
+             f"The single year rows give {sy_txt}, and {odf.period.iloc[-1]} gives {rm[-1]:.1f}. "
+             f"The highest single year or last period value is {max(single_vals):.1f}, against the pooled {rm[rmx]:.1f}. "
              f"With duplicate records merged by title and first author the period series is {', '.join(f'{x:.1f}' for x in mrg)} instead of {', '.join(f'{x:.1f}' for x in rm)}. "
              f"The single year and last period values differ by at most {max(single_vals) - min(single_vals):.1f} keywords, and the duplicate merge moves the last period by {mrg_last - rm[-1]:+.1f}, so this note makes no claim of a trend in either direction. "
              f"{n_both} papers are in both corpora; each is counted in both corpora's periods and they are not tested separately. "
@@ -564,7 +575,7 @@ def main():
               f"Cosine: " + ", ".join(f"{r.period} {r.cosine_per_paper:.3f}" for r in odf.itertuples()) + ". "
               + reading + "\n")
     md.append(equal_note + "\n")
-    md.append(f"The first period has the fewest polycrisis papers ({int(first.n_polycrisis)}), so its tie robust overlap range is {odf.overlap_random_p5.iloc[0]:.0f} to {odf.overlap_random_p95.iloc[0]:.0f}. "
+    md.append(f"The first period has {int(first.n_polycrisis)} polycrisis papers and its tie robust overlap range is {odf.overlap_random_p5.iloc[0]:.0f} to {odf.overlap_random_p95.iloc[0]:.0f}. "
               f"The LtG side is small in the later periods: " + " and ".join(f"{r.n_ltg} tagged papers in {r.period}" for r in odf.itertuples() if r.n_ltg < 100) + ", "
               f"compared with {int(odf.n_ltg.iloc[0])} in {odf.period.iloc[0]}. The LtG 2023 to 2026 slice is {int(odf.n_ltg.iloc[1:].sum())} tagged papers, "
               f"which is {100 * odf.n_ltg.iloc[1:].sum() / odf.n_ltg.iloc[0]:.1f}% of the earlier LtG bin. This is the main confound when comparing periods, because the size matched ranges show how far a {CONTROL_N} paper sample moves the overlap. "
