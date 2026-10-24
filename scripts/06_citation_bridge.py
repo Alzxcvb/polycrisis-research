@@ -256,14 +256,16 @@ def build_gmap(raw_meta, pool_info, ucount):
     for wid, row in raw_meta.iterrows():
         sn_set[wid] = {first_surname(row["authors"]) or "?" + wid}
     refused = Counter()
+    refused_groups = set()
 
-    def union(a, b, rule=""):
+    def union(a, b, rule="", label=""):
         ra, rb = find(a), find(b)
         if ra == rb:
             return True
         sa, sb = sn_set.get(ra, set()), sn_set.get(rb, set())
         if sa and sb and sa != sb:
             refused[rule] += 1
+            refused_groups.add((rule, label))
             return False
         new, old = min(ra, rb), max(ra, rb)
         parent[old] = new
@@ -294,10 +296,10 @@ def build_gmap(raw_meta, pool_info, ucount):
                 st = norm_title(str(t).split(":", 1)[0])
                 if len(st) >= MIN_TITLE:
                     stems[st].add(nt)
-    for ids in keyw.values():
+    for nt_, ids in sorted(keyw.items()):
         for j, other in enumerate(ids):
             for first in ids[:j]:
-                if union(first, other, "same normalised title"):
+                if union(first, other, "same normalised title", nt_):
                     rule_of[other].add("same normalised title")
                     rule_of[first].add("same normalised title")
     # (c) a bare title equal to the part before the colon of longer titles joins the most cited such group
@@ -308,7 +310,7 @@ def build_gmap(raw_meta, pool_info, ucount):
                 done = False
                 for a_ in ids:
                     for b_ in keyw[cands[0]]:
-                        if union(a_, b_, "bare title"):
+                        if union(a_, b_, "bare title", nt):
                             rule_of[a_].add(f"bare title joined the most cited of {len(cands)} longer title group(s)")
                             rule_of[b_].add(f"bare title joined the most cited of {len(cands)} longer title group(s)")
                             done = True
@@ -328,7 +330,7 @@ def build_gmap(raw_meta, pool_info, ucount):
         rules[rep] = set().union(*[rule_of.get(i, set()) for i in ms])
         for i in ms:
             gmap[i] = rep
-    return gmap, comps, rules, refused
+    return gmap, comps, rules, {"pairs": refused, "groups": len(refused_groups)}
 
 
 def make_context(raw_meta, raw_members, raw_refs, gmap, drop_self=True):
@@ -816,7 +818,8 @@ def main():
     md.append("## Merged records\n")
     md.append(f"{len(comps)} groups of records were merged ({len(gmap)} ids): {n_paper_groups_merged} groups contain more than one corpus paper record and {n_work_only} contain at most one corpus paper record (cited works). "
               f"The corpus has {len(all0)} unique ids before merging and {len(all_ids)} papers after. {n_in_merged_bridge} of the {len(bdf)} bridge papers are merged records. "
-              f"Title matches refused because the corpus papers had different first author surnames: {sum(refused_unions.values())} ({', '.join(f'{k} {v}' for k, v in sorted(refused_unions.items())) or 'none'}). "
+              f"Title matches refused because the corpus papers had different first author surnames: {sum(refused_unions['pairs'].values())} attempted pairs ({', '.join(f'{k} {v}' for k, v in sorted(refused_unions['pairs'].items())) or 'none'}) in {refused_unions['groups']} title groups. "
+              "Tie rule: records are processed in sorted OpenAlex id order and each record joins the first earlier record it is allowed to join, so when a title group holds several corpus papers with different first author surnames plus a record that is not a corpus paper, that record joins the lowest id record it can join and the other corpus papers stay separate. "
               "Merged groups among the canon works (both top lists, before shared removal) are listed here. The representative id is the record cited most often. "
               f"The bare title rule is a heuristic: {n_ambiguous} of all groups used it with more than one longer title to choose from (it picks the most cited), and {n_canon_ambiguous} of the groups listed here did, so check those rows.\n")
     md.append(md_table(["Representative id", "Records", "Member ids (year)", "Title", "Rule"], canon_group_rows))

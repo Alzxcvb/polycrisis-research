@@ -5,7 +5,8 @@ Author: Alex Coffman
 
 What this does:
     The saved raw pulls have an empty referenced_works list for many papers
-    (691 of 1,500 polycrisis rows and 466 of 1,154 LtG rows have one).
+    (809 of 1,500 polycrisis rows and 688 of 1,154 LtG rows are empty; 691 and
+    466 are not).
     This script asks OpenAlex again for the reference lists of EVERY unique
     corpus paper (all ids, not only the empty ones, so stale lists update;
     it is only about 53 calls). It does not touch the raw files.
