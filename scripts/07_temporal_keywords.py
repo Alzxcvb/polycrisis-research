@@ -55,12 +55,12 @@ DOC_DIR.mkdir(exist_ok=True)
 TOP_N = 50
 # Bins chosen from the year counts printed at the start of a run. The polycrisis
 # corpus has only 22 papers up to 2019 and 84 up to 2022, so everything up to
-# 2022 is one bin. LtG has 50 papers in 2023 (47 with tags) and 47 papers in 2024 (39 with
-# tags), under 50 once papers with no tags are dropped, so those two years are merged for the main
+# 2022 is one bin. LtG has 50 papers in 2023 (47 with a usable term) and 47 papers in 2024 (39 with
+# a usable term), under 50 once papers with no usable term are dropped, so those two years are merged for the main
 # analysis and shown singly for reference only. Counts after dropping papers with no
-# tags are printed and checked against MIN_PAPERS.
+# usable term are printed and checked against MIN_PAPERS.
 BINS = [("up to 2022", None, 2022), ("2023 to 2024", 2023, 2024), ("2025 to 2026", 2025, 2026)]
-# Single years shown for reference only: LtG has fewer than 50 tagged papers in each.
+# Single years shown for reference only: LtG has fewer than 50 papers with a usable term in each.
 REFERENCE_ONLY = [("2023", 2023, 2023), ("2024", 2024, 2024)]
 MIN_PAPERS = 45            # about 50; a bin below this would be merged
 N_SUBSAMPLES = 300
@@ -257,6 +257,11 @@ def md_table(headers, rows):
 def main():
     poly, ltg, raw_full, (n_rows_poly, n_rows_ltg) = load()
     n_both = len(set(poly["openalex_id"]) & set(ltg["openalex_id"]))
+    def _empty(df):
+        return int(sum(1 for k, c in zip(df["keywords"], df["concepts"]) if not (isinstance(k, str) and k.strip()) and not (isinstance(c, str) and c.strip())))
+    n_empty_p, n_empty_l = _empty(poly), _empty(ltg)
+    n_nou_p, n_nou_l = int(sum(1 for t in poly["terms"] if not t)), int(sum(1 for t in ltg["terms"] if not t))
+    print(f"Papers with empty keyword and concept cells: polycrisis {n_empty_p}, ltg {n_empty_l}; with no usable term after cleaning: polycrisis {n_nou_p}, ltg {n_nou_l}")
     def kw_len(df):
         return int(max((len([t for t in str(v).split(";") if t.strip()]) for v in df["keywords"].dropna()), default=0))
     max_kw = max(kw_len(poly), kw_len(ltg))
@@ -283,12 +288,12 @@ def main():
     print(f"Papers with no usable terms: polycrisis {sum(1 for s in poly['terms'] if not s)}, ltg {sum(1 for s in ltg['terms'] if not s)}")
 
     # consistency check against the 21
-    # full period uses tagged papers only (same rule as the period rows), with or without a year
+    # full period uses papers with a usable term only (same rule as the period rows), with or without a year
     poly_t = poly[[bool(t) for t in poly["terms"]]]
     ltg_t = ltg[[bool(t) for t in ltg["terms"]]]
     n_full_p, n_full_l = len(poly_t), len(ltg_t)
     n_full_noyear_p, n_full_noyear_l = int(poly_t["year"].isna().sum()), int(ltg_t["year"].isna().sum())
-    print(f"Full period tagged papers: polycrisis {n_full_p} ({n_full_noyear_p} without a year), ltg {n_full_l} ({n_full_noyear_l} without a year)")
+    print(f"Full period papers with a usable term: polycrisis {n_full_p} ({n_full_noyear_p} without a year), ltg {n_full_l} ({n_full_noyear_l} without a year)")
     ov_full, jac_full, wj_full, cos_full, tp_full, tl_full = similarities(list(poly_t["terms"]), list(ltg_t["terms"]))
     print(f"\nCONSISTENCY CHECK, full period from paper CSVs: overlap of top {TOP_N} = {ov_full}, "
           f"Jaccard {jac_full:.3f}, weighted Jaccard {wj_full:.3f}, cosine {cos_full:.3f}")
@@ -342,13 +347,13 @@ def main():
     poly_m, grp_p, tied_p = merge_records(poly)
     ltg_m, grp_l, tied_l = merge_records(ltg)
     n_merged_p, n_merged_l = len(poly) - len(poly_m), len(ltg) - len(ltg_m)
-    n_tagged_merged_p = int(sum(1 for i in poly.index.difference(poly_m.index) if poly.loc[i, "terms"]))
-    n_tagged_merged_l = int(sum(1 for i in ltg.index.difference(ltg_m.index) if ltg.loc[i, "terms"]))
-    print(f"Extra records of the same work removed by the title and first author merge: polycrisis {n_merged_p} ({n_tagged_merged_p} tagged), ltg {n_merged_l} ({n_tagged_merged_l} tagged)")
+    n_usable_merged_p = int(sum(1 for i in poly.index.difference(poly_m.index) if poly.loc[i, "terms"]))
+    n_usable_merged_l = int(sum(1 for i in ltg.index.difference(ltg_m.index) if ltg.loc[i, "terms"]))
+    print(f"Extra records of the same work removed by the title and first author merge: polycrisis {n_merged_p} ({n_usable_merged_p} with a usable term), ltg {n_merged_l} ({n_usable_merged_l} with a usable term)")
     rng_m = np.random.default_rng(SEED + 7)
-    def tagged(df):
+    def usable(df):
         return df[[bool(t) for t in df["terms"]]]
-    fm = tie_robust(list(tagged(poly_m)["terms"]), list(tagged(ltg_m)["terms"]), rng_m, TIE_DRAWS)
+    fm = tie_robust(list(usable(poly_m)["terms"]), list(usable(ltg_m)["terms"]), rng_m, TIE_DRAWS)
     print(f"Merged-record sensitivity, full period: strict {fm['strict']}, random mean {fm['mean']:.2f} ({fm['p5']:.0f} to {fm['p95']:.0f})")
     print(f"Full period tie robust: alphabetical {ov_full}, strict {full_tr['strict']}, random mean {full_tr['mean']:.2f} (5th to 95th {full_tr['p5']:.0f} to {full_tr['p95']:.0f})")
     print(f"Full period ties: polycrisis cutoff {full_tr['parts_p'][0]}, {len(full_tr['parts_p'][2])} tied, {full_tr['parts_p'][3]} slots; ltg cutoff {full_tr['parts_l'][0]}, {len(full_tr['parts_l'][2])} tied, {full_tr['parts_l'][3]} slots")
@@ -358,19 +363,19 @@ def main():
         prev = None
         for label, lo, hi in lo_hi_list:
             bp_all, bl_all = in_bin(poly, lo, hi), in_bin(ltg, lo, hi)
-            # papers with no keyword or concept tags are left out of every measure
+            # papers with no usable term after cleaning are left out of every measure
             bp = bp_all[[bool(t) for t in bp_all["terms"]]]
             bl = bl_all[[bool(t) for t in bl_all["terms"]]]
             n_p, n_l = len(bp), len(bl)
-            print(f"  papers in period before dropping untagged: polycrisis {len(bp_all)}, ltg {len(bl_all)}")
+            print(f"  papers in period before dropping papers with no usable term: polycrisis {len(bp_all)}, ltg {len(bl_all)}")
             flag = "" if min(n_p, n_l) >= 50 else " (below 50)"
             print(f"\nPeriod {label}: polycrisis n={n_p}, ltg n={n_l}{flag}")
             assert tier != "main" or min(n_p, n_l) >= MIN_PAPERS, f"bin {label} too small"
-            tp_list, cp = top_terms(list(bp["terms"]))
-            tl_list, cl = top_terms(list(bl["terms"]))
+            tp_list, _ = top_terms(list(bp["terms"]))
+            tl_list, _ = top_terms(list(bl["terms"]))
             ov, jac, wj, cos, sp_, sl_ = similarities(list(bp["terms"]), list(bl["terms"]))
             tr = tie_robust(list(bp["terms"]), list(bl["terms"]), rng, TIE_DRAWS)
-            bpm, blm = tagged(in_bin(poly_m, lo, hi)), tagged(in_bin(ltg_m, lo, hi))
+            bpm, blm = usable(in_bin(poly_m, lo, hi)), usable(in_bin(ltg_m, lo, hi))
             trm = tie_robust(list(bpm["terms"]), list(blm["terms"]), rng_m, TIE_DRAWS)
             strict_sh = tr["strict_p"] & tr["strict_l"]
             # size matched control: the same number of papers from each corpus, same size in every period
@@ -401,7 +406,7 @@ def main():
                    "matched_n_per_corpus": k,
                    "mean_terms_polycrisis": float(np.mean([len(t) for t in bp["terms"]])),
                    "mean_terms_ltg": float(np.mean([len(t) for t in bl["terms"]])),
-                   "untagged_share_polycrisis": 1 - n_p / len(bp_all), "untagged_share_ltg": 1 - n_l / len(bl_all),
+                   "no_usable_term_share_polycrisis": 1 - n_p / len(bp_all), "no_usable_term_share_ltg": 1 - n_l / len(bl_all),
                    "merged_n_polycrisis": len(bpm), "merged_n_ltg": len(blm), "merged_overlap_strict": trm["strict"],
                    "merged_overlap_random_mean": trm["mean"], "merged_overlap_random_p5": trm["p5"], "merged_overlap_random_p95": trm["p95"],
                    "overlap_strict": tr["strict"], "overlap_random_mean": tr["mean"],
@@ -430,7 +435,7 @@ def main():
             prev = (sp_, sl_, tr["strict_p"] | set(tr["parts_p"][2]), tr["strict_l"] | set(tr["parts_l"][2]), strict_sh, tr["strict_p"], tr["strict_l"])
             rows.append(row)
             print({k_: v for k_, v in row.items() if not isinstance(v, str)})
-    full_row = {"tier": "full_period", "period": "full period (tagged papers, any year)",
+    full_row = {"tier": "full_period", "period": "full period (papers with a usable term, any year)",
                 "n_polycrisis_all": len(poly), "n_ltg_all": len(ltg), "n_polycrisis": n_full_p, "n_ltg": n_full_l,
                 "overlap_top50": ov_full, "jaccard_top50": jac_full, "weighted_jaccard_share": wj_full, "cosine_per_paper": cos_full,
                 "overlap_strict": full_tr["strict"], "overlap_random_mean": full_tr["mean"],
@@ -502,7 +507,7 @@ def main():
     ctrl_rows = [(r.period, f"{r.overlap_random_mean:.1f}", f"{r.matched_overlap_mean:.1f}", f"{r.matched_overlap_p5:.0f} to {r.matched_overlap_p95:.0f}", f"{r.overlap_random_mean - r.matched_overlap_mean:+.1f}", r.matched_n_per_corpus)
                  for r in odf.itertuples()]
     equal_note = (f"Size matched control: each row draws the same number of papers from each corpus, without replacement ({N_SUBSAMPLES} draws, random tie breaking): {', '.join(f'{int(r.matched_n_per_corpus)} for {r.period}' for r in odf.itertuples())}"
-                  + (f"; for the single year rows {', '.join(f'{int(r.matched_n_per_corpus)} for {r.period}' for r in oref.itertuples())}" if len(oref) else "") + f" (the smaller of {CONTROL_N} and the tagged papers available in each corpus). "
+                  + (f"; for the single year rows {', '.join(f'{int(r.matched_n_per_corpus)} for {r.period}' for r in oref.itertuples())}" if len(oref) else "") + f" (the smaller of {CONTROL_N} and the papers with a usable term available in each corpus). "
                   + "Overlap at that size: " + "; ".join(f"{r.period} {r.matched_overlap_mean:.1f} (5th to 95th {r.matched_overlap_p5:.0f} to {r.matched_overlap_p95:.0f})" for r in odf.itertuples())
                   + ". Size matched cosine: " + "; ".join(f"{r.period} {r.matched_cos_mean:.3f} (5th to 95th {r.matched_cos_p5:.3f} to {r.matched_cos_p95:.3f}) against observed {r.cosine_per_paper:.3f}" for r in odf.itertuples())
                   + ". Size matched weighted Jaccard: " + "; ".join(f"{r.period} {r.matched_wj_mean:.3f} (5th to 95th {r.matched_wj_p5:.3f} to {r.matched_wj_p95:.3f}) against observed {r.weighted_jaccard_share:.3f}" for r in odf.itertuples())
@@ -512,7 +517,7 @@ def main():
                   "The spread is understated where a draw takes a large share of its corpus, because draws then overlap heavily and the range reflects the draw, not full sampling uncertainty. "
                   "Draws that take at least half of their corpus: " + ("; ".join(f"{int(r.matched_n_per_corpus)} of {int(nn)} {cname} papers in {r.period}" for r in odf.itertuples()
                                                                        for cname, nn in (("polycrisis", r.n_polycrisis), ("LtG", r.n_ltg)) if r.matched_n_per_corpus / nn >= 0.5) or "none") + ". "
-                  + ("In the single year rows, " + "; ".join(f"the draw takes {int(r.matched_n_per_corpus)} of {int(nn)} {cname} papers in {r.period}" + (" (the entire tagged set, so that side has no sampling variation)" if r.matched_n_per_corpus == nn else "")
+                  + ("In the single year rows, " + "; ".join(f"the draw takes {int(r.matched_n_per_corpus)} of {int(nn)} {cname} papers in {r.period}" + (" (the entire set of papers with a usable term, so that side has no sampling variation)" if r.matched_n_per_corpus == nn else "")
                                                        for r in oref.itertuples() for cname, nn in (("polycrisis", r.n_polycrisis), ("LtG", r.n_ltg)) if r.matched_n_per_corpus / nn >= 0.5) + "." if len(oref) else ""))
     md = []
     md.append("# Results: Temporal Keyword Convergence\n")
@@ -522,7 +527,8 @@ def main():
     md.append(
         f"* **Keyword source.** The same as the {ov05} of {TOP_N} headline in `scripts/05_simple_viz.py`, except that repeated OpenAlex ids are kept once (counts differ from 05's saved counts for {cmm[TOP_N]['deduped polycrisis']} polycrisis and {cmm[TOP_N]['deduped ltg']} LtG terms in the saved top {TOP_N}, see the consistency check): the `keywords` and `concepts` columns of "
         "`data/polycrisis_papers.csv` and `data/ltg_refined_papers.csv`, lowercased, longer than 2 characters, counted once per paper, "
-        "then the stopword list and the drop of any term containing a bracket from 05. These are the OpenAlex keyword and concept tags saved in the CSVs, not author keywords.\n"
+        "then the stopword list and the drop of any term containing a bracket from 05. These are the OpenAlex keyword and concept tags saved in the CSVs, not author keywords. A paper has a usable term if at least one term is left after the length rule, the stopword list and the bracket rule; papers with no usable term are left out of every measure. "
+        f"Papers with no usable term: {n_nou_p} of {len(poly)} polycrisis and {n_nou_l} of {len(ltg)} LtG, of which {n_empty_p} and {n_empty_l} have empty keyword and concept cells (the rest lose all their terms to the cleaning rules).\n"
         f"* **Consistency check.** For the full period, the top {TOP_N} lists of the two corpora share {ov_full} terms with alphabetical tie breaking, recomputed from the paper CSVs. "
         f"Using the saved frequency files exactly as 05 does gives {ov05}. "
         + ("These agree, and the top 50 sets are identical. " if (ov_full == ov05 and tp_full == r05p and tl_full == r05l) else
@@ -542,15 +548,15 @@ def main():
         f"* **Measures per period.** Top {TOP_N} overlap is reported three ways: with alphabetical tie breaking (this script's tie rule; 05 breaks ties by first seen order, so the full period count of {ov_full} matches 05's {ov05} only as a count, and the top 50 sets differ by {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms per side; shown for comparison only), with the strict set (only terms whose count is above the cutoff count), "
         f"and with random tie breaking ({TIE_DRAWS} seeded draws, mean and 5th to 95th percentile). Readings use the random tie breaking numbers. "
         "Weighted Jaccard uses all keywords by share of papers (sum of the smaller share divided by sum of the larger share), and cosine similarity uses keyword vectors in which each paper adds a total weight of 1 spread over its keywords; neither depends on a top 50 cutoff.\n"
-        f"* **Size matched control.** Because the corpora differ in size, the script also draws, without replacement, the smaller of {CONTROL_N} and the tagged papers available from each corpus in each row ({N_SUBSAMPLES} draws) and measures the top {TOP_N} overlap with random tie breaking. {CONTROL_N} is below the smallest main period corpus ({int(min(odf.n_polycrisis.min(), odf.n_ltg.min()))} papers). Seed {SEED}.\n"
-        f"* **Full period row.** Uses the same rule as the period rows: tagged papers only. That is {n_full_p} polycrisis and {n_full_l} LtG papers, including {n_full_noyear_p} and {n_full_noyear_l} with no year, which the period rows cannot include.\n")
+        f"* **Size matched control.** Because the corpora differ in size, the script also draws, without replacement, the smaller of {CONTROL_N} and the papers with a usable term available from each corpus in each row ({N_SUBSAMPLES} draws) and measures the top {TOP_N} overlap with random tie breaking. {CONTROL_N} is below the smallest main period corpus ({int(min(odf.n_polycrisis.min(), odf.n_ltg.min()))} papers). Seed {SEED}.\n"
+        f"* **Full period row.** Uses the same rule as the period rows: papers with a usable term only. That is {n_full_p} polycrisis and {n_full_l} LtG papers, including {n_full_noyear_p} and {n_full_noyear_l} with no year, which the period rows cannot include.\n")
     md.append("## Papers per period\n")
-    md.append(md_table(["Period", "Polycrisis papers", "Polycrisis with tags (used)", "LtG papers", "LtG with tags (used)"],
+    md.append(md_table(["Period", "Polycrisis papers", "Polycrisis with a usable term (used)", "LtG papers", "LtG with a usable term (used)"],
                        [(r.period, r.n_polycrisis_all, r.n_polycrisis, r.n_ltg_all, r.n_ltg) for r in odf.itertuples()]))
-    md.append(f"\nPapers placed in a period (have a year, before dropping untagged papers): {n_placed_p} of {len(poly)} polycrisis papers and {n_placed_l} of {len(ltg)} LtG papers. "
-              f"Of these, the tagged papers actually used: {n_in_bins_p} polycrisis and {n_in_bins_l} LtG. "
+    md.append(f"\nPapers placed in a period (have a year, before dropping papers with no usable term): {n_placed_p} of {len(poly)} polycrisis papers and {n_placed_l} of {len(ltg)} LtG papers. "
+              f"Of these, the papers with a usable term actually used: {n_in_bins_p} polycrisis and {n_in_bins_l} LtG. "
               f"Polycrisis papers up to 2019: {int(((poly.year <= 2019)).sum())}, up to 2022: {int(((poly.year <= 2022)).sum())}, which is why the first period is wide. "
-              f"The single years 2023 and 2024 have {', '.join(str(int(r.n_ltg)) + ' tagged LtG papers in ' + r.period for r in oref.itertuples())}, both under 50, so they are shown only for reference. 2026 is a partial year: the latest publication date in either corpus is {latest_txt}, so the 2025 to 2026 period holds a full 2025 and only part of 2026.\n")
+              f"The single years 2023 and 2024 have {', '.join(str(int(r.n_ltg)) + ' LtG papers with a usable term in ' + r.period for r in oref.itertuples())}, both under 50, so they are shown only for reference. 2026 is a partial year: the latest publication date in either corpus is {latest_txt}, so the 2025 to 2026 period holds a full 2025 and only part of 2026.\n")
     md.append("## Results\n")
     md.append(md_table(["Period", f"Overlap, random ties: mean (5th to 95th)", "Overlap, strict set", "Overlap, alphabetical ties", "Weighted Jaccard", "Cosine"],
                        [(r.period, f"{r.overlap_random_mean:.1f} ({r.overlap_random_p5:.0f} to {r.overlap_random_p95:.0f})", r.overlap_strict, r.overlap_top50,
@@ -566,7 +572,7 @@ def main():
     md.append("### Size matched control\n")
     md.append(md_table(["Period", "Observed overlap (random ties)", "Size matched mean", "Size matched 5th to 95th", "Gap (observed minus matched)", "Papers per corpus in control"], ctrl_rows))
     if len(oref):
-        md.append(f"\nSingle years for reference only, not used for the main reading (LtG tagged papers used: {', '.join(str(int(r.n_ltg)) + ' in ' + r.period for r in oref.itertuples())}, under 50, so treat as indicative only):\n")
+        md.append(f"\nSingle years for reference only, not used for the main reading (LtG papers with a usable term used: {', '.join(str(int(r.n_ltg)) + ' in ' + r.period for r in oref.itertuples())}, under 50, so treat as indicative only):\n")
         md.append(md_table(["Period", "Polycrisis used", "LtG used", "Overlap, random ties: mean (5th to 95th)", "Overlap, strict set", "Weighted Jaccard", "Cosine", "Size matched mean"],
                            [(r.period, r.n_polycrisis, r.n_ltg, f"{r.overlap_random_mean:.1f} ({r.overlap_random_p5:.0f} to {r.overlap_random_p95:.0f})", r.overlap_strict,
                              f"{r.weighted_jaccard_share:.3f}", f"{r.cosine_per_paper:.3f}", f"{r.matched_overlap_mean:.1f} (n = {int(r.matched_n_per_corpus)} per corpus)") for r in oref.itertuples()]))
@@ -583,7 +589,6 @@ def main():
     mrg = list(odf.merged_overlap_random_mean)
     mrg_last = mrg[-1]
     sy = [(r.period, r.overlap_random_mean) for r in oref.itertuples()]      # single year rows, reference only
-    mx_i = int(np.argmax(mm))
     sy_txt = ", ".join(f"{pname} {v:.1f}" for pname, v in sy)
     single_vals = [v for _, v in sy] + [rm[-1]]
     plain = (f"In plain terms: the highest tie robust overlap of the two fields' top {TOP_N} keywords is in {odf.period.iloc[rmx]} ({rm[rmx]:.1f} shared keywords), and the lowest is in {odf.period.iloc[rmn]} ({rm[rmn]:.1f}). "
@@ -596,7 +601,7 @@ def main():
     md.append("## Plain reading\n")
     md.append(plain + "\n")
     md.append(f"Duplicate record sensitivity: this script keeps one row per OpenAlex id, while 06 finds more records of the same work. Applying the same title and first author rule here (06 enforces the same first author check for every corpus paper merge) removes {n_merged_p} more polycrisis and {n_merged_l} more LtG records "
-              f"({n_tagged_merged_p} and {n_tagged_merged_l} of them tagged). Tie robust overlap with those merged: " + "; ".join(f"{r.period} {r.merged_overlap_random_mean:.1f} ({r.merged_overlap_random_p5:.0f} to {r.merged_overlap_random_p95:.0f}) against {r.overlap_random_mean:.1f} unmerged" for r in odf.itertuples())
+              f"({n_usable_merged_p} and {n_usable_merged_l} of them with a usable term). Tie robust overlap with those merged: " + "; ".join(f"{r.period} {r.merged_overlap_random_mean:.1f} ({r.merged_overlap_random_p5:.0f} to {r.merged_overlap_random_p95:.0f}) against {r.overlap_random_mean:.1f} unmerged" for r in odf.itertuples())
               + f"; full period {fm['mean']:.1f} ({fm['p5']:.0f} to {fm['p95']:.0f}) against {full_tr['mean']:.1f}. The main tables use the id only rule. "
               f"Which record of a merged work is kept: highest cited_by_count, then most distinct terms, then lowest OpenAlex id. Merged groups: {grp_p} polycrisis and {grp_l} LtG, of which {tied_p} and {tied_l} have the top two records tied on cited_by_count, so the second and third parts of the rule decided them.\n")
     md.append(f"Top {TOP_N} overlap with random tie breaking: " + ", ".join(f"{r.period} {r.overlap_random_mean:.1f} ({r.overlap_random_p5:.0f} to {r.overlap_random_p95:.0f})" for r in odf.itertuples()) + ". "
@@ -605,16 +610,16 @@ def main():
               + reading + "\n")
     md.append(equal_note + "\n")
     md.append(f"The first period has {int(first.n_polycrisis)} polycrisis papers and its tie robust overlap range is {odf.overlap_random_p5.iloc[0]:.0f} to {odf.overlap_random_p95.iloc[0]:.0f}. "
-              f"The LtG side is small in the later periods: " + " and ".join(f"{r.n_ltg} tagged papers in {r.period}" for r in odf.itertuples() if r.n_ltg < 100) + ", "
-              f"compared with {int(odf.n_ltg.iloc[0])} in {odf.period.iloc[0]}. The LtG 2023 to 2026 slice is {int(odf.n_ltg.iloc[1:].sum())} tagged papers, "
+              f"The LtG side is small in the later periods: " + " and ".join(f"{r.n_ltg} papers with a usable term in {r.period}" for r in odf.itertuples() if r.n_ltg < 100) + ", "
+              f"compared with {int(odf.n_ltg.iloc[0])} in {odf.period.iloc[0]}. The LtG 2023 to 2026 slice is {int(odf.n_ltg.iloc[1:].sum())} papers with a usable term, "
               f"which is {100 * odf.n_ltg.iloc[1:].sum() / odf.n_ltg.iloc[0]:.1f}% of the earlier LtG bin. This is the main confound when comparing periods, because the size matched ranges show how far a {CONTROL_N} paper sample moves the overlap. "
               f"The widest tie robust 5th to 95th range in any period is {int((odf.overlap_random_p95 - odf.overlap_random_p5).max())} keywords and the widest size matched range is {int((odf.matched_overlap_p95 - odf.matched_overlap_p5).max())}. "
               f"The duplicate record merge also moves the last period: {mrg_last:.1f} instead of {rm[-1]:.1f} ({mrg_last - rm[-1]:+.1f}) in {odf.period.iloc[-1]}, so that period is sensitive to the record rule.\n")
     md.append("## Limitations\n")
     md.append(
-        "* **Tag counts differ by period.** The overlap is computed from tags taken as given from the OpenAlex records. In the data, the mean number of distinct terms per tagged paper is "
+        "* **Tag counts differ by period.** The overlap is computed from tags taken as given from the OpenAlex records. In the data, the mean number of distinct terms per paper with a usable term is "
         + "; ".join(f"{r.period} {r.mean_terms_polycrisis:.1f} polycrisis and {r.mean_terms_ltg:.1f} LtG" for r in odf.itertuples())
-        + ", and the share of papers with no tags is " + "; ".join(f"{r.period} {100 * r.untagged_share_polycrisis:.1f}% polycrisis and {100 * r.untagged_share_ltg:.1f}% LtG" for r in odf.itertuples())
+        + ", and the share of papers with no usable term is " + "; ".join(f"{r.period} {100 * r.no_usable_term_share_polycrisis:.1f}% polycrisis and {100 * r.no_usable_term_share_ltg:.1f}% LtG" for r in odf.itertuples())
         + ". If tagging differs between periods or corpora, a change in overlap may come from tagging as well as from what authors write. This note does not test how the tags were produced.\n"
         "* **Corpus filter.** The LtG refined corpus was filtered in `scripts/01b_fetch_ltg_refined.py` on text that includes the same kinds of tags counted here (the full keyword and concept lists in 01b; the capped lists, at most 10 keywords and 5 concepts, here), together with the title and abstract: a paper containing a strong marker such as polycrisis is kept, and a paper whose text contains a biology or ecology marker such as ecology is rejected unless a strong marker is present.\n"
         f"* **Broad tags.** Shared top keywords can be broad labels instead of shared ideas. The full period strict shared set is: {'; '.join(sorted(full_tr['strict_p'] & full_tr['strict_l']))}. Whether these reflect shared ideas is not tested here.\n"
@@ -622,11 +627,11 @@ def main():
         f"* **Small early bins.** Polycrisis papers: {int((poly.year <= 2019).sum())} up to 2019 and {int((poly.year <= 2022).sum())} up to 2022, out of {len(poly)}, so the earliest polycrisis period is small and merged. "
         f"The first period holds {int(odf.n_ltg_all.iloc[0])} LtG papers published {int(ltg.year[ltg.year <= 2022].min())} to 2022 (median year {ltg.year[ltg.year <= 2022].median():.1f}; {100 * (ltg.year[ltg.year <= 2022] < 2000).mean():.1f}% before 2000), so it mixes many years.\n"
         "* **Unequal sizes.** The two corpora differ in size within each period (see the papers per period table). The size matched control gives a like for like series across periods but does not correct the observed numbers.\n"
-        f"* **Ties.** The most terms left out at the cutoff in any period and corpus is {int(max((odf.tied_polycrisis - odf.slots_polycrisis).max(), (odf.tied_ltg - odf.slots_ltg).max()))} (see the tie table), so the alphabetical top 50 overlap is a single draw from a range. Readings here use the random tie breaking range.\n"
+        f"* **Ties.** The most terms left out at the cutoff in any of the three main periods is {int(max((odf.tied_polycrisis - odf.slots_polycrisis).max(), (odf.tied_ltg - odf.slots_ltg).max()))}, and across the main periods and the single year rows it is {int(max((pd.concat([odf, oref]).tied_polycrisis - pd.concat([odf, oref]).slots_polycrisis).max(), (pd.concat([odf, oref]).tied_ltg - pd.concat([odf, oref]).slots_ltg).max()))} (see the tie table for the main periods), so the alphabetical top 50 overlap is a single draw from a range. Readings here use the random tie breaking range.\n"
         f"* **Corpus scope.** The corpora are the results of keyword queries, so overlap between them describes these retrieved sets, not the whole of either field. {n_both} papers are in both corpora.\n"
         f"* **Truncated tag lists.** Checked against the raw API records ({n_raw_papers} papers): {n_kw_cut} have more than 10 OpenAlex keywords (the most is {n_kw_max}), and the fetch script keeps only the first 10 in the CSV, so those papers lose tags. "
         f"The fetch script also keeps only the 5 highest scoring concepts; {n_co_cut} raw records have more than 5 concepts.\n"
-        "* **Untagged papers.** Papers with no keyword or concept tags are left out, and the share of such papers may differ by period and corpus.\n"
+        f"* **Papers with no usable term.** {n_nou_p} polycrisis and {n_nou_l} LtG papers have no usable term and are left out; the share by period is in the tag counts bullet above.\n"
         f"* **Duplicate records.** Repeated records of the same work are removed by OpenAlex id only in the main tables. The title and first author rule would remove {n_merged_p} more polycrisis and {n_merged_l} more LtG records; the sensitivity above shows the effect.\n"
         "* **Bin choice.** The period bins were chosen after looking at the year counts, to keep enough papers in both corpora.\n")
     text = "\n".join(md)

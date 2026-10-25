@@ -135,7 +135,7 @@ Primary null (within corpus): each tested paper keeps its own number of referenc
 | 100 | 1 | 61 | 92.9 | 80 | 107 | 115 |
 | 100 | 2 | 10 | 12.9 | 8 | 18 | 22 |
 
-Of the 6 rows, 3 are below the within corpus null range, 3 are inside it and 0 are above it. Rows below: N = 25 with 1 reference per side, N = 50 with 1 reference per side, N = 100 with 1 reference per side. Rows above: none. Inside means within the 5th to 95th percentile range of the within corpus null. The model ignores topical clustering inside each field, which any real literature has, so being near or below it is expected to some degree.
+Of the 6 rows, 3 are below the within corpus null range, 3 are inside it and 0 are above it. Rows below: N = 25 with 1 reference per side, N = 50 with 1 reference per side, N = 100 with 1 reference per side. Rows above: none. Inside means within the 5th to 95th percentile range of the within corpus null. The model ignores topical clustering inside each field, which any real literature has.
 
 Secondary null (pooled): the same draw, but from the pooled references of both corpora together. Real papers live in one corpus, so this null is shown for comparison only.
 
