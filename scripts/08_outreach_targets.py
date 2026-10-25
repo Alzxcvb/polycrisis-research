@@ -19,7 +19,7 @@ Run AFTER 06_citation_bridge.py has written data/canon_metadata_cache.json (from
     .venv/bin/python scripts/08_outreach_targets.py
 
 Output:
-    data/outreach_B1.csv, data/outreach_B2.csv, data/outreach_B3.csv, data/outreach_B4.csv
+    data/outreach_B1.csv, data/outreach_B2.csv, data/outreach_B3.csv, data/outreach_B4.csv, data/outreach_B3_sensitivity.csv
     docs/RESULTS_outreach_targets.md
 Network: none. The script reads local files only and stops with a clear message if
 data/canon_metadata_cache.json (written by 06 on its first run) does not cover every id it needs, so it
@@ -262,11 +262,12 @@ def main():
         b3 = b3_all[:TOP_N]
     tie_key = (lambda a: (round(btw[a], BTW_DECIMALS), deg[a])) if nx else (lambda a: deg[a])
     tie_size = Counter(tie_key(a) for a in nodes)
+    other_tied = lambda a: tie_size[tie_key(a)] - 1      # other authors with the same degree and rounded betweenness
     tie15 = tie_key(b3_all[TABLE_N - 1])
     tie15_rows = [i for i, a in enumerate(b3_all) if tie_key(a) == tie15]
     tie_last = tie15_rows[-1]
     print(f"B3: authors tied with rank {TABLE_N} (same degree and rounded betweenness): {len(tie15_rows)}, occupying ranks {tie15_rows[0] + 1} to {tie_last + 1}")
-    tie_cut = tie_size[tie_key(b3_all[TOP_N - 1])]
+    tie_cut = other_tied(b3_all[TOP_N - 1])
     print(f"B3: authors tied with rank {TOP_N}: {tie_cut}")
     big = [u for u in sorted(P) if len(unit_auth.get(u, {})) == max_auth]
     big_auth = set().union(*[set(unit_auth[u]) for u in big]) if big else set()
@@ -300,8 +301,8 @@ def main():
     print(f"B3 sensitivity: papers with more than {SENS_MAX_AUTHORS} author ids left out: {n_excl}; edges {len(sedges)}; overlap with primary top {TOP_N}: {sens_overlap}")
     print(f"B3: largest author list on one merged polycrisis paper: {max_auth}")
     write_csv(DATA_DIR / "outreach_B3.csv",
-              ["rank", "openalex_author_id", "name", "degree", "betweenness", "authors_tied_with_this_row", "polycrisis_papers", "institutions"],
-              [[i + 1, a, name_of(tabP[a]), deg[a], (f"{btw[a]:.8f}" if nx else ""), tie_size[tie_key(a)], len(tabP[a]["papers"]), "; ".join(insts(tabP[a]))]
+              ["rank", "openalex_author_id", "name", "degree", "betweenness", "other_authors_tied_with_this_row", "polycrisis_papers", "institutions"],
+              [[i + 1, a, name_of(tabP[a]), deg[a], (f"{btw[a]:.8f}" if nx else ""), other_tied(a), len(tabP[a]["papers"]), "; ".join(insts(tabP[a]))]
                for i, a in enumerate(b3)])
     write_csv(DATA_DIR / "outreach_B3_sensitivity.csv",
               ["rank", "openalex_author_id", "name", "degree", "betweenness", "in_primary_top_30"],
@@ -359,9 +360,6 @@ def main():
     wtab = md_table(["Source display name", "Raw records with this name", "Outside the window (years)", "In window with no authorships (year, type)"],
                     [[sname, why[sname][0], yr_txt(why[sname][1]),
                       (", ".join(f"{y}, {t}" for y, t in why[sname][2]) if why[sname][2] else "none")] for sname in TARGET_JOURNALS])
-    ex_ids = ["A5009821113", "A5028527609"]
-    ex = [f"{name_of(tabAll[a])} ({'; '.join(insts(tabAll[a])[:INST_SHOWN])})" for a in ex_ids if a in tabAll]
-    ex_txt = " and ".join(ex)
     b3_rows = b3_all[:max(TABLE_N, tie_last + 1)]
     t1 = md_table(["Rank", "OpenAlex author id", "Name", "Papers", "Total citations", "Latest year", "Institutions seen (up to 3)"],
                   [[i + 1, a, name_of(tabP[a]), len(tabP[a]["papers"]), tabP[a]["cites"], tabP[a]["year"], short_inst(tabP[a])]
@@ -370,8 +368,8 @@ def main():
                   [[i + 1, r[0], name_of(tabAll[r[0]]), r[1], r[2], r[3], r[7], r[8], r[5], (", ".join(r[6]) if r[6] else "none"), short_inst(tabAll[r[0]])]
                    for i, r in enumerate(rows2[:TABLE_N])])
     bcol = "Betweenness" if nx else "Betweenness (not computed)"
-    t3 = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "Authors tied with this row", "Polycrisis papers", "Institutions seen (up to 3)"],
-                  [[i + 1, a, name_of(tabP[a]), deg[a], (f"{btw[a]:.8f}" if nx else "n/a"), tie_size[tie_key(a)], len(tabP[a]["papers"]), short_inst(tabP[a])]
+    t3 = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "Other authors tied with this row", "Polycrisis papers", "Institutions seen (up to 3)"],
+                  [[i + 1, a, name_of(tabP[a]), deg[a], (f"{btw[a]:.8f}" if nx else "n/a"), other_tied(a), len(tabP[a]["papers"]), short_inst(tabP[a])]
                    for i, a in enumerate(b3_rows)])
     t3s = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "In primary top 30"],
                    [[i + 1, a, name_of(tabP[a]), sdeg[a], (f"{sb[a]:.8f}" if nx else "n/a"), "yes" if a in b3 else "no"]
@@ -428,7 +426,7 @@ Effect of the shared papers: only {len(both_units):,} merged papers are in both 
 
 Method: {b3_method} Betweenness is rounded to {BTW_DECIMALS} decimals before ranking, so authors whose values differ by less than that count as tied and are then ordered by degree and author id.
 
-Counts: {pl(overlap_b1_b3, 'author is', 'authors are')} in both the B1 and B3 lists. {pl(len(tie15_rows), 'author has', 'authors have')} the same degree and rounded betweenness as rank {TABLE_N}, at ranks {tie15_rows[0] + 1} to {tie_last + 1}; the table shows all of them, ordered only by author id. {pl(tie_cut, 'author is', 'authors are')} tied with rank {TOP_N}. Of the top {TOP_N}, {n_big_top:,} authors are coauthors on the {pl(len(big), 'paper', 'papers')} with the longest author list ({max_auth:,} author ids each): {', '.join(big)}. File: `data/outreach_B3.csv`.
+Counts: {pl(overlap_b1_b3, 'author is', 'authors are')} in both the B1 and B3 lists. {pl(len(tie15_rows), 'author has', 'authors have')} the same degree and rounded betweenness as rank {TABLE_N}, at ranks {tie15_rows[0] + 1} to {tie_last + 1}; the table shows all of them, ordered only by author id. {pl(tie_cut, 'other author is', 'other authors are')} tied with rank {TOP_N}. Of the top {TOP_N}, {n_big_top:,} authors are coauthors on the {pl(len(big), 'paper', 'papers')} with the longest author list ({max_auth:,} author ids each): {', '.join(big)}. File: `data/outreach_B3.csv`.
 
 {t3}
 
@@ -459,7 +457,7 @@ Why some rows are small or empty. The zero rows are explained by the records in 
 - The corpora are keyword searches, not the whole literature. {len(P):,} polycrisis papers and {len(L):,} LtG papers say nothing about authors who write on these topics under other terms. Counts describe the corpora only.
 - B3 is built from polycrisis papers only. Coauthor links that exist only through LtG papers are not in the network. Papers with long author lists add many edges, and the primary list applies no cap; the sensitivity table shows the effect of a cap of {SENS_MAX_AUTHORS}.
 - Ties are common in B1 and B3 (see the tie counts above). The order inside a tie comes from the author id, which carries no meaning.
-- Institution names come from OpenAlex affiliation matching and are not checked. The lists show every institution seen on the author's corpus papers, and some are wrong. Examples in the tables: {ex_txt}.
+- Institution names come from OpenAlex affiliation matching and are not checked. The lists show every institution seen on the author's corpus papers. Treat them as unverified.
 - B2 depends on the {len(both_units):,} papers that are in both corpora, as described above.
 - The script needs `data/canon_metadata_cache.json` and the raw files. `data/` is gitignored, so a clean clone must rebuild them (scripts 01 to 06) before this script can run.
 - B4 uses the primary location only. A paper listed under another source name is not matched. Journal names were matched exactly as written, so renamed or abbreviated forms are missed.

@@ -66,37 +66,37 @@ Effect of the shared papers: only 7 merged papers are in both corpora, yet 20 of
 
 Method: The network has one node per author id in the polycrisis corpus and one edge between two authors who share at least one merged polycrisis paper. It has 2,848 nodes and 10,614 edges in 1,028 connected components; the largest has 202 nodes. Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version 3.2.1), normalised, computed exactly. The list is ranked by betweenness, then degree, then author id in text order. The largest author list on one paper has 49 authors. Every paper adds a full set of edges among its authors, with no cap, so a long author list adds many edges. Betweenness is rounded to 8 decimals before ranking, so authors whose values differ by less than that count as tied and are then ordered by degree and author id.
 
-Counts: 6 authors are in both the B1 and B3 lists. 13 authors have the same degree and rounded betweenness as rank 15, at ranks 15 to 27; the table shows all of them, ordered only by author id. 1 author is tied with rank 30. Of the top 30, 16 authors are coauthors on the 2 papers with the longest author list (49 author ids each): W4414512012, W7125682156. File: `data/outreach_B3.csv`.
+Counts: 6 authors are in both the B1 and B3 lists. 13 authors have the same degree and rounded betweenness as rank 15, at ranks 15 to 27; the table shows all of them, ordered only by author id. 0 other authors are tied with rank 30. Of the top 30, 16 authors are coauthors on the 2 papers with the longest author list (49 author ids each): W4414512012, W7125682156. File: `data/outreach_B3.csv`.
 
-| Rank | OpenAlex author id | Name | Degree | Betweenness | Authors tied with this row | Polycrisis papers | Institutions seen (up to 3) |
+| Rank | OpenAlex author id | Name | Degree | Betweenness | Other authors tied with this row | Polycrisis papers | Institutions seen (up to 3) |
 |---|---|---|---|---|---|---|---|
-| 1 | A5087834371 | Erik Andersson | 73 | 0.00262115 | 1 | 3 | Stockholm University; Helsinki Art Museum; Helsinki Institute of Physics (+2 more) |
-| 2 | A5066581729 | Steven J. Lade | 21 | 0.00251748 | 1 | 3 | Australian National University; Stockholm Resilience Centre; Stockholm University |
-| 3 | A5079184903 | Jonathan F. Donges | 47 | 0.00209168 | 1 | 5 | Potsdam Institute for Climate Impact Research; Stockholm Resilience Centre; Stockholm University |
-| 4 | A5002154618 | Luke Kemp | 39 | 0.00055982 | 1 | 2 | University of Cambridge; University of Notre Dame |
-| 5 | A5056456905 | Viola Hakkarainen | 102 | 0.00040601 | 1 | 3 | Leuphana University of Lüneburg; Sustainability Institute; University of Helsinki |
-| 6 | A5066717163 | Peter Søgaard Jørgensen | 23 | 0.00034390 | 1 | 5 | Royal Swedish Academy of Sciences; Stockholm Resilience Centre; Stockholm University (+2 more) |
-| 7 | A5032244227 | Michele‐Lee Moore | 10 | 0.00024190 | 1 | 2 | Stockholm Resilience Centre; Stockholm University; University of Victoria |
-| 8 | A5002835698 | Ayyoob Sharifi | 85 | 0.00021768 | 1 | 3 | Hiroshima University |
-| 9 | A5062372435 | Ortwin Renn | 11 | 0.00019574 | 1 | 6 | Research Institute For Sustainability – Helmholtz Centre Potsdam; Research Institute for Sustainability at GFZ; Dialogik (Germany) |
-| 10 | A5037095112 | Carl Folke | 17 | 0.00019329 | 1 | 2 | Royal Swedish Academy of Sciences; Stockholm Resilience Centre; Stockholm University |
-| 11 | A5083276781 | Robert J. Lempert | 30 | 0.00014662 | 1 | 2 | RAND Corporation; RAND School of Public Policy |
-| 12 | A5049476075 | Christine Wamsler | 24 | 0.00014662 | 1 | 2 | Lund University |
-| 13 | A5067540078 | Magnus Nyström | 19 | 0.00011027 | 1 | 3 | Stockholm Resilience Centre; Stockholm University |
-| 14 | A5060273669 | Ajay Gambhir | 29 | 0.00009824 | 1 | 2 | Imperial College London; ASM International; Center for Assessment |
-| 15 | A5027993123 | Yohannes Tefera Damtew | 82 | 0.00007106 | 13 | 2 | Haramaya University; The University of Adelaide |
-| 16 | A5028600064 | Giles B. Sioen | 82 | 0.00007106 | 13 | 2 | The University of Tokyo |
-| 17 | A5039290879 | Milena Groß | 82 | 0.00007106 | 13 | 2 | Leuphana University of Lüneburg |
-| 18 | A5044055220 | Virginia Murray | 82 | 0.00007106 | 13 | 2 | UK Health Security Agency |
-| 19 | A5045187468 | Pablo De La Cruz | 82 | 0.00007106 | 13 | 2 | Ministry of Agriculture and Rural Development |
-| 20 | A5052018420 | Ana Bastos | 82 | 0.00007106 | 13 | 2 | Leipzig University |
-| 21 | A5070179069 | Yolandi Ernst | 82 | 0.00007106 | 13 | 2 | University of the Witwatersrand |
-| 22 | A5079671593 | Wan-Yu Shih | 82 | 0.00007106 | 13 | 2 | National Taiwan University |
-| 23 | A5088387571 | Yuki Yoshida | 82 | 0.00007106 | 13 | 2 | National Institute for Environmental Studies |
-| 24 | A5089674984 | Marcin Pawel Jarzebski | 82 | 0.00007106 | 13 | 2 | The University of Tokyo |
-| 25 | A5090378417 | Zeenat Niazi | 82 | 0.00007106 | 13 | 2 | Energy and Resources Institute; Society For Development Alternatives |
-| 26 | A5119730476 | Amanda J. Aceituno | 82 | 0.00007106 | 13 | 2 | Leuphana University of Lüneburg; Stockholm Resilience Centre; Stockholm University |
-| 27 | A5119730483 | Uchi D. Terhile | 82 | 0.00007106 | 13 | 2 | Federal University Dutse |
+| 1 | A5087834371 | Erik Andersson | 73 | 0.00262115 | 0 | 3 | Stockholm University; Helsinki Art Museum; Helsinki Institute of Physics (+2 more) |
+| 2 | A5066581729 | Steven J. Lade | 21 | 0.00251748 | 0 | 3 | Australian National University; Stockholm Resilience Centre; Stockholm University |
+| 3 | A5079184903 | Jonathan F. Donges | 47 | 0.00209168 | 0 | 5 | Potsdam Institute for Climate Impact Research; Stockholm Resilience Centre; Stockholm University |
+| 4 | A5002154618 | Luke Kemp | 39 | 0.00055982 | 0 | 2 | University of Cambridge; University of Notre Dame |
+| 5 | A5056456905 | Viola Hakkarainen | 102 | 0.00040601 | 0 | 3 | Leuphana University of Lüneburg; Sustainability Institute; University of Helsinki |
+| 6 | A5066717163 | Peter Søgaard Jørgensen | 23 | 0.00034390 | 0 | 5 | Royal Swedish Academy of Sciences; Stockholm Resilience Centre; Stockholm University (+2 more) |
+| 7 | A5032244227 | Michele‐Lee Moore | 10 | 0.00024190 | 0 | 2 | Stockholm Resilience Centre; Stockholm University; University of Victoria |
+| 8 | A5002835698 | Ayyoob Sharifi | 85 | 0.00021768 | 0 | 3 | Hiroshima University |
+| 9 | A5062372435 | Ortwin Renn | 11 | 0.00019574 | 0 | 6 | Research Institute For Sustainability – Helmholtz Centre Potsdam; Research Institute for Sustainability at GFZ; Dialogik (Germany) |
+| 10 | A5037095112 | Carl Folke | 17 | 0.00019329 | 0 | 2 | Royal Swedish Academy of Sciences; Stockholm Resilience Centre; Stockholm University |
+| 11 | A5083276781 | Robert J. Lempert | 30 | 0.00014662 | 0 | 2 | RAND Corporation; RAND School of Public Policy |
+| 12 | A5049476075 | Christine Wamsler | 24 | 0.00014662 | 0 | 2 | Lund University |
+| 13 | A5067540078 | Magnus Nyström | 19 | 0.00011027 | 0 | 3 | Stockholm Resilience Centre; Stockholm University |
+| 14 | A5060273669 | Ajay Gambhir | 29 | 0.00009824 | 0 | 2 | Imperial College London; ASM International; Center for Assessment |
+| 15 | A5027993123 | Yohannes Tefera Damtew | 82 | 0.00007106 | 12 | 2 | Haramaya University; The University of Adelaide |
+| 16 | A5028600064 | Giles B. Sioen | 82 | 0.00007106 | 12 | 2 | The University of Tokyo |
+| 17 | A5039290879 | Milena Groß | 82 | 0.00007106 | 12 | 2 | Leuphana University of Lüneburg |
+| 18 | A5044055220 | Virginia Murray | 82 | 0.00007106 | 12 | 2 | UK Health Security Agency |
+| 19 | A5045187468 | Pablo De La Cruz | 82 | 0.00007106 | 12 | 2 | Ministry of Agriculture and Rural Development |
+| 20 | A5052018420 | Ana Bastos | 82 | 0.00007106 | 12 | 2 | Leipzig University |
+| 21 | A5070179069 | Yolandi Ernst | 82 | 0.00007106 | 12 | 2 | University of the Witwatersrand |
+| 22 | A5079671593 | Wan-Yu Shih | 82 | 0.00007106 | 12 | 2 | National Taiwan University |
+| 23 | A5088387571 | Yuki Yoshida | 82 | 0.00007106 | 12 | 2 | National Institute for Environmental Studies |
+| 24 | A5089674984 | Marcin Pawel Jarzebski | 82 | 0.00007106 | 12 | 2 | The University of Tokyo |
+| 25 | A5090378417 | Zeenat Niazi | 82 | 0.00007106 | 12 | 2 | Energy and Resources Institute; Society For Development Alternatives |
+| 26 | A5119730476 | Amanda J. Aceituno | 82 | 0.00007106 | 12 | 2 | Leuphana University of Lüneburg; Stockholm Resilience Centre; Stockholm University |
+| 27 | A5119730483 | Uchi D. Terhile | 82 | 0.00007106 | 12 | 2 | Federal University Dutse |
 
 Sensitivity (the primary list above is unchanged): the same ranking with the 11 polycrisis papers that have more than 20 author ids left out. The network then has 4,460 edges. 8 of its top 30 are also in the primary top 30. File: `data/outreach_B3_sensitivity.csv`.
 
@@ -167,7 +167,7 @@ Why some rows are small or empty. The zero rows are explained by the records in 
 - The corpora are keyword searches, not the whole literature. 1,385 polycrisis papers and 1,080 LtG papers say nothing about authors who write on these topics under other terms. Counts describe the corpora only.
 - B3 is built from polycrisis papers only. Coauthor links that exist only through LtG papers are not in the network. Papers with long author lists add many edges, and the primary list applies no cap; the sensitivity table shows the effect of a cap of 20.
 - Ties are common in B1 and B3 (see the tie counts above). The order inside a tie comes from the author id, which carries no meaning.
-- Institution names come from OpenAlex affiliation matching and are not checked. The lists show every institution seen on the author's corpus papers, and some are wrong. Examples in the tables: Martin Parker (Edinburgh College; University of Bristol) and Reg Watson (Swansea Bay University Health Board; University of British Columbia).
+- Institution names come from OpenAlex affiliation matching and are not checked. The lists show every institution seen on the author's corpus papers. Treat them as unverified.
 - B2 depends on the 7 papers that are in both corpora, as described above.
 - The script needs `data/canon_metadata_cache.json` and the raw files. `data/` is gitignored, so a clean clone must rebuild them (scripts 01 to 06) before this script can run.
 - B4 uses the primary location only. A paper listed under another source name is not matched. Journal names were matched exactly as written, so renamed or abbreviated forms are missed.
