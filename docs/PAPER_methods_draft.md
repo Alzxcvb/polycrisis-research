@@ -209,25 +209,25 @@ The tables come from the results notes and the CSV files in `data/`. The notes a
 | Proposed table | What it shows | Source | Proposed placement |
 |:--|:--|:--|:--|
 | T1 Corpus construction | Records, distinct ids, filtered and merged counts, overlap of the two corpora | Section 2.2 counts; `RESULTS_citation_bridge.md:22, 76` | Main text |
-| T2 Reference coverage | Papers, papers with a list, share, references and distinct works by corpus; coverage by document type | `RESULTS_citation_bridge.md:67-71, 246` | Main text |
+| T2 Reference coverage | Papers, papers with a list, share, references and distinct works by corpus; coverage by document type | `RESULTS_citation_bridge.md:67 to 71, 246` | Main text |
 | T3 Saved against refetched lists | The eight comparison categories and the reference list rule comparison | `RESULTS_citation_bridge.md:73` | Supplement |
-| T4 Bridge counts at each N and variant | Canon sizes, shared works removed, bridge papers, denominator and share, for both canon definitions, both shared canon variants, both thresholds, merged and unmerged records | `RESULTS_citation_bridge.md:80-117`; `data/bridge_sensitivity.csv` | Main text (selected rows) and supplement (full) |
-| T5 Random reference comparison | Observed count, null mean, 5th and 95th percentiles and maximum, within corpus (both variants) and pooled | `RESULTS_citation_bridge.md:129-160` | Main text or supplement |
-| T6 Canon cutoff ties | Bridge counts by id order, strict canon and random ties | `RESULTS_citation_bridge.md:170-177`; `data/bridge_tie_sensitivity.csv` | Supplement |
-| T7 Shared canon | The works in both top 50 lists with citing paper counts | `RESULTS_citation_bridge.md:209-217` | Main text or supplement |
+| T4 Bridge counts at each N and variant | Canon sizes, shared works removed, bridge papers, denominator and share, for both canon definitions, both shared canon variants, both thresholds, merged and unmerged records | `RESULTS_citation_bridge.md:80 to 117`; `data/bridge_sensitivity.csv` | Main text (selected rows) and supplement (full) |
+| T5 Random reference comparison | Observed count, null mean, 5th and 95th percentiles and maximum, within corpus (both variants) and pooled | `RESULTS_citation_bridge.md:129 to 160` | Main text or supplement |
+| T6 Canon cutoff ties | Bridge counts by id order, strict canon and random ties | `RESULTS_citation_bridge.md:170 to 177`; `data/bridge_tie_sensitivity.csv` | Supplement |
+| T7 Shared canon | The works in both top 50 lists with citing paper counts | `RESULTS_citation_bridge.md:209 to 217` | Main text or supplement |
 | T8 Canon lists | Both top 50 lists with titles, years, types and merged ids | `data/canon_polycrisis_N50.csv`, `data/canon_ltg_N50.csv` | Supplement |
-| T9 Bridge paper list | Bridge papers with corpus, reference counts per canon and `cited_by_count` (top 15 in the note, full list in the CSV) | `RESULTS_citation_bridge.md:182-205`; `data/bridge_papers.csv` | Supplement |
-| T10 Merged record groups | Groups among canon works and bridge papers with the merge rule | `RESULTS_citation_bridge.md:24-60` | Supplement |
-| T11 Bridge share by period | Tested papers, bridge papers and share for the five periods; restricted year checks | `RESULTS_citation_bridge.md:223-239` | Main text or supplement |
-| T12 Papers per period | Papers and papers with a usable term, by corpus and period | `RESULTS_temporal_keywords.md:20-26` | Main text |
-| T13 Keyword overlap by period | Overlap under three tie rules, weighted Jaccard, cosine | `RESULTS_temporal_keywords.md:30-35`; `data/temporal_keyword_overlap.csv` | Main text |
-| T14 Top 50 ties | Cutoff count, tied terms and open slots | `RESULTS_temporal_keywords.md:39-44` | Supplement |
-| T15 Size matched control | Observed against size matched overlap, with single years for reference | `RESULTS_temporal_keywords.md:50-61` | Main text or supplement |
-| T16 New and shared keywords by period | Strict shared and entering terms | `RESULTS_temporal_keywords.md:67-71`; `data/temporal_top_keywords.csv` | Supplement |
+| T9 Bridge paper list | Bridge papers with corpus, reference counts per canon and `cited_by_count` (top 15 in the note, full list in the CSV) | `RESULTS_citation_bridge.md:182 to 205`; `data/bridge_papers.csv` | Supplement |
+| T10 Merged record groups | Groups among canon works and bridge papers with the merge rule | `RESULTS_citation_bridge.md:24 to 60` | Supplement |
+| T11 Bridge share by period | Tested papers, bridge papers and share for the five periods; restricted year checks | `RESULTS_citation_bridge.md:223 to 239` | Main text or supplement |
+| T12 Papers per period | Papers and papers with a usable term, by corpus and period | `RESULTS_temporal_keywords.md:20 to 26` | Main text |
+| T13 Keyword overlap by period | Overlap under three tie rules, weighted Jaccard, cosine | `RESULTS_temporal_keywords.md:30 to 35`; `data/temporal_keyword_overlap.csv` | Main text |
+| T14 Top 50 ties | Cutoff count, tied terms and open slots | `RESULTS_temporal_keywords.md:39 to 44` | Supplement |
+| T15 Size matched control | Observed against size matched overlap, with single years for reference | `RESULTS_temporal_keywords.md:50 to 61` | Main text or supplement |
+| T16 New and shared keywords by period | Strict shared and entering terms | `RESULTS_temporal_keywords.md:67 to 71`; `data/temporal_top_keywords.csv` | Supplement |
 | T17 Duplicate record sensitivity (keywords) | Overlap on title and first author merged sets | `RESULTS_temporal_keywords.md:79`; columns `merged_*` in `data/temporal_keyword_overlap.csv` | Supplement |
 | T18 Parameters | The parameter table in Section 2.7 | Section 2.7 | Supplement |
-| T19 Filter markers | Full strong, medium and biology marker lists of the LtG filter | `scripts/01b_fetch_ltg_refined.py:48-93` | Supplement |
-| T20 Stopword list | The 44 removed terms | `scripts/05_simple_viz.py:33-49` | Supplement |
+| T19 Filter markers | Full strong, medium and biology marker lists of the LtG filter | `scripts/01b_fetch_ltg_refined.py:48 to 93` | Supplement |
+| T20 Stopword list | The 44 removed terms | `scripts/05_simple_viz.py:33 to 49` | Supplement |
 
 <!-- src: sources as listed in each row -->
 
