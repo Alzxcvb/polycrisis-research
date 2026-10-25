@@ -42,47 +42,81 @@ Method: an author id with at least one merged paper in the polycrisis corpus and
 
 Counts: 28 authors are in both corpora. 17 of them have at least one bridge paper (53 bridge papers in the file). 24 have a smaller count of 1. File: `data/outreach_B2.csv`.
 
-| Rank | OpenAlex author id | Name | Polycrisis papers | LtG papers | Min | Total citations | Bridge papers (06) | Institutions seen (up to 3) |
-|---|---|---|---|---|---|---|---|---|
-| 1 | A5014061110 | Olivier Hamant | 5 | 8 | 5 | 14 | W4323321151, W4323321210, W4323321213, W4323321215, W4323321217, W4323342307, W4323344182, W4410523526 | Laboratoire Reproduction et Développement des Plantes; Université Claude Bernard Lyon 1; Centre National de la Recherche Scientifique (+2 more) |
-| 2 | A5081404129 | Aled Jones | 2 | 3 | 2 | 49 | W4407368689 | Anglia Ruskin University |
-| 3 | A5074514849 | Freya Higgins‐Desbiolles | 2 | 2 | 2 | 513 | none | University of South Australia; Taylor's University; University of Waterloo |
-| 4 | A5074676050 | Christoph Mandl | 2 | 3 | 2 | 7 | W4410523526 | University of Vienna; BOKU University |
-| 5 | A5023827486 | Scott Janzwood | 4 | 1 | 1 | 450 | W4390954240, W4406151044 | Cascade (United States); Royal Roads University; Cascades (Canada) |
-| 6 | A5008970019 | Michael Lawrence | 4 | 1 | 1 | 384 | W4390954240, W4406151044 | Royal Roads University; Cascades (Canada) |
-| 7 | A5019788295 | Karla Boluk | 2 | 1 | 1 | 483 | none | University of Waterloo; York St John University |
-| 8 | A5051704952 | Jürgen Scheffran | 3 | 1 | 1 | 10 | none | Universität Hamburg; Institute of Geography |
-| 9 | A5009821113 | Martin Parker | 1 | 2 | 1 | 0 | none | Edinburgh College; University of Bristol |
-| 10 | A5028527609 | Reg Watson | 1 | 1 | 1 | 376 | none | Swansea Bay University Health Board; University of British Columbia |
-| 11 | A5073478048 | Ray Ison | 1 | 1 | 1 | 42 | none | Bertalanffy Center for the Study of Systems Science; The Open University |
-| 12 | A5089128108 | Zora Kovacic | 1 | 1 | 1 | 11 | none | Universitat Oberta de Catalunya |
-| 13 | A5052854436 | Milena Büchs | 1 | 1 | 1 | 4 | W4414532704 | University of Leeds |
-| 14 | A5023193852 | David Collste | 2 | 1 | 1 | 3 | W4410523526 | Stockholm Resilience Centre; Stockholm University |
-| 15 | A5039251309 | Cristina I. Apetrei | 2 | 1 | 1 | 3 | W4410523526 | Leuphana University of Lüneburg |
+Effect of the shared papers: only 7 merged papers are in both corpora, yet 20 of the 28 authors have one of them, and 18 authors would not be in this list if those papers were left out of both counts. 7 of them have no other paper in either corpus. The two "without shared papers" columns show each author's counts with those papers removed.
+
+| Rank | OpenAlex author id | Name | Polycrisis papers | LtG papers | Min | Polycrisis without shared papers | LtG without shared papers | Total citations | Bridge papers (06) | Institutions seen (up to 3) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | A5014061110 | Olivier Hamant | 5 | 8 | 5 | 4 | 7 | 14 | W4323321151, W4323321210, W4323321213, W4323321215, W4323321217, W4323342307, W4323344182, W4410523526 | Laboratoire Reproduction et Développement des Plantes; Université Claude Bernard Lyon 1; Centre National de la Recherche Scientifique (+2 more) |
+| 2 | A5081404129 | Aled Jones | 2 | 3 | 2 | 2 | 3 | 49 | W4407368689 | Anglia Ruskin University |
+| 3 | A5074514849 | Freya Higgins‐Desbiolles | 2 | 2 | 2 | 2 | 2 | 513 | none | University of South Australia; Taylor's University; University of Waterloo |
+| 4 | A5074676050 | Christoph Mandl | 2 | 3 | 2 | 1 | 2 | 7 | W4410523526 | University of Vienna; BOKU University |
+| 5 | A5023827486 | Scott Janzwood | 4 | 1 | 1 | 3 | 0 | 450 | W4390954240, W4406151044 | Cascade (United States); Royal Roads University; Cascades (Canada) |
+| 6 | A5008970019 | Michael Lawrence | 4 | 1 | 1 | 3 | 0 | 384 | W4390954240, W4406151044 | Royal Roads University; Cascades (Canada) |
+| 7 | A5019788295 | Karla Boluk | 2 | 1 | 1 | 2 | 1 | 483 | none | University of Waterloo; York St John University |
+| 8 | A5051704952 | Jürgen Scheffran | 3 | 1 | 1 | 2 | 0 | 10 | none | Universität Hamburg; Institute of Geography |
+| 9 | A5009821113 | Martin Parker | 1 | 2 | 1 | 1 | 2 | 0 | none | Edinburgh College; University of Bristol |
+| 10 | A5028527609 | Reg Watson | 1 | 1 | 1 | 1 | 1 | 376 | none | Swansea Bay University Health Board; University of British Columbia |
+| 11 | A5073478048 | Ray Ison | 1 | 1 | 1 | 1 | 1 | 42 | none | Bertalanffy Center for the Study of Systems Science; The Open University |
+| 12 | A5089128108 | Zora Kovacic | 1 | 1 | 1 | 1 | 1 | 11 | none | Universitat Oberta de Catalunya |
+| 13 | A5052854436 | Milena Büchs | 1 | 1 | 1 | 1 | 1 | 4 | W4414532704 | University of Leeds |
+| 14 | A5023193852 | David Collste | 2 | 1 | 1 | 1 | 0 | 3 | W4410523526 | Stockholm Resilience Centre; Stockholm University |
+| 15 | A5039251309 | Cristina I. Apetrei | 2 | 1 | 1 | 1 | 0 | 3 | W4410523526 | Leuphana University of Lüneburg |
 
 ## B3. Central authors in the polycrisis coauthor network
 
-Method: The network has one node per author id in the polycrisis corpus and one edge between two authors who share at least one merged polycrisis paper. It has 2,848 nodes and 10,614 edges in 1,028 connected components; the largest has 202 nodes. Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version 3.2.1), normalised, computed exactly. The list is ranked by betweenness, then degree, then author id in text order. The largest author list on one paper has 49 authors. Every paper adds a full set of edges among its authors, with no cap, so a long author list adds many edges.
+Method: The network has one node per author id in the polycrisis corpus and one edge between two authors who share at least one merged polycrisis paper. It has 2,848 nodes and 10,614 edges in 1,028 connected components; the largest has 202 nodes. Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version 3.2.1), normalised, computed exactly. The list is ranked by betweenness, then degree, then author id in text order. The largest author list on one paper has 49 authors. Every paper adds a full set of edges among its authors, with no cap, so a long author list adds many edges. Betweenness is rounded to 8 decimals before ranking, so authors whose values differ by less than that count as tied and are then ordered by degree and author id.
 
-Counts: 6 authors are in both the B1 and B3 lists. File: `data/outreach_B3.csv`.
+Counts: 6 authors are in both the B1 and B3 lists. 13 authors have the same degree and rounded betweenness as rank 15, at ranks 15 to 27; the table shows all of them, ordered only by author id. 1 author is tied with rank 30. Of the top 30, 16 authors are coauthors on the 2 papers with the longest author list (49 author ids each): W4414512012, W7125682156. File: `data/outreach_B3.csv`.
 
-| Rank | OpenAlex author id | Name | Degree | Betweenness | Polycrisis papers | Institutions seen (up to 3) |
-|---|---|---|---|---|---|---|
-| 1 | A5087834371 | Erik Andersson | 73 | 0.002621 | 3 | Stockholm University; Helsinki Art Museum; Helsinki Institute of Physics (+2 more) |
-| 2 | A5066581729 | Steven J. Lade | 21 | 0.002517 | 3 | Australian National University; Stockholm Resilience Centre; Stockholm University |
-| 3 | A5079184903 | Jonathan F. Donges | 47 | 0.002092 | 5 | Potsdam Institute for Climate Impact Research; Stockholm Resilience Centre; Stockholm University |
-| 4 | A5002154618 | Luke Kemp | 39 | 0.000560 | 2 | University of Cambridge; University of Notre Dame |
-| 5 | A5056456905 | Viola Hakkarainen | 102 | 0.000406 | 3 | Leuphana University of Lüneburg; Sustainability Institute; University of Helsinki |
-| 6 | A5066717163 | Peter Søgaard Jørgensen | 23 | 0.000344 | 5 | Royal Swedish Academy of Sciences; Stockholm Resilience Centre; Stockholm University (+2 more) |
-| 7 | A5032244227 | Michele‐Lee Moore | 10 | 0.000242 | 2 | Stockholm Resilience Centre; Stockholm University; University of Victoria |
-| 8 | A5002835698 | Ayyoob Sharifi | 85 | 0.000218 | 3 | Hiroshima University |
-| 9 | A5062372435 | Ortwin Renn | 11 | 0.000196 | 6 | Research Institute For Sustainability – Helmholtz Centre Potsdam; Research Institute for Sustainability at GFZ; Dialogik (Germany) |
-| 10 | A5037095112 | Carl Folke | 17 | 0.000193 | 2 | Royal Swedish Academy of Sciences; Stockholm Resilience Centre; Stockholm University |
-| 11 | A5083276781 | Robert J. Lempert | 30 | 0.000147 | 2 | RAND Corporation; RAND School of Public Policy |
-| 12 | A5049476075 | Christine Wamsler | 24 | 0.000147 | 2 | Lund University |
-| 13 | A5067540078 | Magnus Nyström | 19 | 0.000110 | 3 | Stockholm Resilience Centre; Stockholm University |
-| 14 | A5060273669 | Ajay Gambhir | 29 | 0.000098 | 2 | Imperial College London; ASM International; Center for Assessment |
-| 15 | A5027993123 | Yohannes Tefera Damtew | 82 | 0.000071 | 2 | Haramaya University; The University of Adelaide |
+| Rank | OpenAlex author id | Name | Degree | Betweenness | Authors tied with this row | Polycrisis papers | Institutions seen (up to 3) |
+|---|---|---|---|---|---|---|---|
+| 1 | A5087834371 | Erik Andersson | 73 | 0.00262115 | 1 | 3 | Stockholm University; Helsinki Art Museum; Helsinki Institute of Physics (+2 more) |
+| 2 | A5066581729 | Steven J. Lade | 21 | 0.00251748 | 1 | 3 | Australian National University; Stockholm Resilience Centre; Stockholm University |
+| 3 | A5079184903 | Jonathan F. Donges | 47 | 0.00209168 | 1 | 5 | Potsdam Institute for Climate Impact Research; Stockholm Resilience Centre; Stockholm University |
+| 4 | A5002154618 | Luke Kemp | 39 | 0.00055982 | 1 | 2 | University of Cambridge; University of Notre Dame |
+| 5 | A5056456905 | Viola Hakkarainen | 102 | 0.00040601 | 1 | 3 | Leuphana University of Lüneburg; Sustainability Institute; University of Helsinki |
+| 6 | A5066717163 | Peter Søgaard Jørgensen | 23 | 0.00034390 | 1 | 5 | Royal Swedish Academy of Sciences; Stockholm Resilience Centre; Stockholm University (+2 more) |
+| 7 | A5032244227 | Michele‐Lee Moore | 10 | 0.00024190 | 1 | 2 | Stockholm Resilience Centre; Stockholm University; University of Victoria |
+| 8 | A5002835698 | Ayyoob Sharifi | 85 | 0.00021768 | 1 | 3 | Hiroshima University |
+| 9 | A5062372435 | Ortwin Renn | 11 | 0.00019574 | 1 | 6 | Research Institute For Sustainability – Helmholtz Centre Potsdam; Research Institute for Sustainability at GFZ; Dialogik (Germany) |
+| 10 | A5037095112 | Carl Folke | 17 | 0.00019329 | 1 | 2 | Royal Swedish Academy of Sciences; Stockholm Resilience Centre; Stockholm University |
+| 11 | A5083276781 | Robert J. Lempert | 30 | 0.00014662 | 1 | 2 | RAND Corporation; RAND School of Public Policy |
+| 12 | A5049476075 | Christine Wamsler | 24 | 0.00014662 | 1 | 2 | Lund University |
+| 13 | A5067540078 | Magnus Nyström | 19 | 0.00011027 | 1 | 3 | Stockholm Resilience Centre; Stockholm University |
+| 14 | A5060273669 | Ajay Gambhir | 29 | 0.00009824 | 1 | 2 | Imperial College London; ASM International; Center for Assessment |
+| 15 | A5027993123 | Yohannes Tefera Damtew | 82 | 0.00007106 | 13 | 2 | Haramaya University; The University of Adelaide |
+| 16 | A5028600064 | Giles B. Sioen | 82 | 0.00007106 | 13 | 2 | The University of Tokyo |
+| 17 | A5039290879 | Milena Groß | 82 | 0.00007106 | 13 | 2 | Leuphana University of Lüneburg |
+| 18 | A5044055220 | Virginia Murray | 82 | 0.00007106 | 13 | 2 | UK Health Security Agency |
+| 19 | A5045187468 | Pablo De La Cruz | 82 | 0.00007106 | 13 | 2 | Ministry of Agriculture and Rural Development |
+| 20 | A5052018420 | Ana Bastos | 82 | 0.00007106 | 13 | 2 | Leipzig University |
+| 21 | A5070179069 | Yolandi Ernst | 82 | 0.00007106 | 13 | 2 | University of the Witwatersrand |
+| 22 | A5079671593 | Wan-Yu Shih | 82 | 0.00007106 | 13 | 2 | National Taiwan University |
+| 23 | A5088387571 | Yuki Yoshida | 82 | 0.00007106 | 13 | 2 | National Institute for Environmental Studies |
+| 24 | A5089674984 | Marcin Pawel Jarzebski | 82 | 0.00007106 | 13 | 2 | The University of Tokyo |
+| 25 | A5090378417 | Zeenat Niazi | 82 | 0.00007106 | 13 | 2 | Energy and Resources Institute; Society For Development Alternatives |
+| 26 | A5119730476 | Amanda J. Aceituno | 82 | 0.00007106 | 13 | 2 | Leuphana University of Lüneburg; Stockholm Resilience Centre; Stockholm University |
+| 27 | A5119730483 | Uchi D. Terhile | 82 | 0.00007106 | 13 | 2 | Federal University Dutse |
+
+Sensitivity (the primary list above is unchanged): the same ranking with the 11 polycrisis papers that have more than 20 author ids left out. The network then has 4,460 edges. 8 of its top 30 are also in the primary top 30. File: `data/outreach_B3_sensitivity.csv`.
+
+| Rank | OpenAlex author id | Name | Degree | Betweenness | In primary top 30 |
+|---|---|---|---|---|---|
+| 1 | A5079184903 | Jonathan F. Donges | 21 | 0.00011601 | yes |
+| 2 | A5066581729 | Steven J. Lade | 21 | 0.00008466 | yes |
+| 3 | A5066717163 | Peter Søgaard Jørgensen | 23 | 0.00006564 | yes |
+| 4 | A5032244227 | Michele‐Lee Moore | 10 | 0.00005430 | yes |
+| 5 | A5062372435 | Ortwin Renn | 11 | 0.00004566 | yes |
+| 6 | A5037095112 | Carl Folke | 17 | 0.00003384 | yes |
+| 7 | A5004388635 | Sandra Waddock | 15 | 0.00002830 | no |
+| 8 | A5020471515 | Otto Scharmer | 9 | 0.00001999 | no |
+| 9 | A5067540078 | Magnus Nyström | 19 | 0.00001960 | yes |
+| 10 | A5107546797 | Max Bechthold | 12 | 0.00001777 | no |
+| 11 | A5128756282 | Wolfram Barfuss | 12 | 0.00001777 | no |
+| 12 | A5025780942 | Michael Obersteiner | 17 | 0.00001629 | no |
+| 13 | A5033332133 | Arthur Ramalho Magalhães | 21 | 0.00001185 | no |
+| 14 | A5112818004 | Ulysses Paulino Albuquerque | 21 | 0.00001185 | no |
+| 15 | A5015630766 | Rose K. Vukovic | 20 | 0.00001111 | no |
 
 ## B4. Authors in the target journals, 2024 to 2026
 
@@ -98,6 +132,15 @@ Counts: 30 merged papers and 92 authors. File: `data/outreach_B4.csv`.
 | Scientometrics | no match | 0 | 0 | 0 | 0 | 0 |
 | Sustainability | matched | 7 | 25 | 2 | 5 | 0 |
 | Journal of Industrial Ecology | matched | 1 | 0 | 0 | 1 | 0 |
+
+Why some rows are small or empty. The zero rows are explained by the records in the corpora, not by the matching rule:
+
+| Source display name | Raw records with this name | Outside the window (years) | In window with no authorships (year, type) |
+|---|---|---|---|
+| Global Sustainability | 22 | none | none |
+| Scientometrics | 1 | 2011 | none |
+| Sustainability | 14 | 2012, 2013, 2013, 2015, 2019, 2019, 2022 | none |
+| Journal of Industrial Ecology | 3 | 2020, 2023 | 2025, article |
 
 | Rank | OpenAlex author id | Name | Target journal papers | Total citations | Journals | In polycrisis | In LtG | Institutions seen (up to 3) |
 |---|---|---|---|---|---|---|---|---|
@@ -122,7 +165,11 @@ Counts: 30 merged papers and 92 authors. File: `data/outreach_B4.csv`.
 - OpenAlex author disambiguation makes errors. One person can be split across several ids, which lowers that person's counts. Two people can share one id, which raises them. Nothing here corrects this.
 - 694 of 5,782 authorships have no author id and are not counted.
 - The corpora are keyword searches, not the whole literature. 1,385 polycrisis papers and 1,080 LtG papers say nothing about authors who write on these topics under other terms. Counts describe the corpora only.
-- B3 covers only the polycrisis corpus, so ties outside it do not show. Large author lists add many edges, and no cap was applied.
+- B3 is built from polycrisis papers only. Coauthor links that exist only through LtG papers are not in the network. Papers with long author lists add many edges, and the primary list applies no cap; the sensitivity table shows the effect of a cap of 20.
+- Ties are common in B1 and B3 (see the tie counts above). The order inside a tie comes from the author id, which carries no meaning.
+- Institution names come from OpenAlex affiliation matching and are not checked. The lists show every institution seen on the author's corpus papers, and some are wrong. Examples in the tables: Martin Parker (Edinburgh College; University of Bristol) and Reg Watson (Swansea Bay University Health Board; University of British Columbia).
+- B2 depends on the 7 papers that are in both corpora, as described above.
+- The script needs `data/canon_metadata_cache.json` and the raw files. `data/` is gitignored, so a clean clone must rebuild them (scripts 01 to 06) before this script can run.
 - B4 uses the primary location only. A paper listed under another source name is not matched. Journal names were matched exactly as written, so renamed or abbreviated forms are missed.
 - Citation totals are OpenAlex counts at the time of the data pull and are summed over an author's papers in the list.
 - These are research leads, not a contact list. The script reads no email address, phone number or personal page, and none is stored in the outputs.
