@@ -547,7 +547,7 @@ def main():
         f"* **Periods.** Chosen after seeing the year counts, so every period has about 50 or more papers in both corpora (the script stops if a period has fewer than {MIN_PAPERS}). "
         f"Papers without a year ({int(poly['year'].isna().sum())} polycrisis, {int(ltg['year'].isna().sum())} LtG) are not placed in any period.\n"
         f"* **Measures per period.** Top {TOP_N} overlap is reported three ways: with alphabetical tie breaking (this script's tie rule; the full period count of {ov_full} matches 05's {ov05} only as a count, and the top 50 sets differ by {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms per side; shown for comparison only), with the strict set (only terms whose count is above the cutoff count), "
-        f"and with random tie breaking ({TIE_DRAWS} seeded draws, mean and 5th to 95th percentile). Readings use the random tie breaking numbers. "
+        f"and with random tie breaking ({TIE_DRAWS} seeded draws, mean and 5th to 95th percentile). Readings use the random tie breaking numbers. In this note, tie robust overlap means the mean of the random tie breaking draws ({TIE_DRAWS} draws, seed {SEED}), and tie robust range means their 5th to 95th percentile. "
         "Weighted Jaccard uses all keywords by share of papers (sum of the smaller share divided by sum of the larger share), and cosine similarity uses keyword vectors in which each paper adds a total weight of 1 spread over its keywords; neither depends on a top 50 cutoff.\n"
         f"* **Size matched control.** Because the corpora differ in size, the script also draws, without replacement, the smaller of {CONTROL_N} and the papers with a usable term available from each corpus in each row ({N_SUBSAMPLES} draws) and measures the top {TOP_N} overlap with random tie breaking. {CONTROL_N} is below the smallest main period corpus ({int(min(odf.n_polycrisis.min(), odf.n_ltg.min()))} papers). Seed {SEED}.\n"
         f"* **Full period row.** Uses the same rule as the period rows: papers with a usable term only. That is {n_full_p} polycrisis and {n_full_l} LtG papers, including {n_full_noyear_p} and {n_full_noyear_l} with no year, which the period rows cannot include.\n")
@@ -613,7 +613,7 @@ def main():
     md.append(f"The first period has {int(first.n_polycrisis)} polycrisis papers and its tie robust overlap range is {odf.overlap_random_p5.iloc[0]:.0f} to {odf.overlap_random_p95.iloc[0]:.0f}. "
               f"The LtG side is small in the later periods: " + " and ".join(f"{r.n_ltg} papers with a usable term in {r.period}" for r in odf.itertuples() if r.n_ltg < 100) + ", "
               f"compared with {int(odf.n_ltg.iloc[0])} in {odf.period.iloc[0]}. The LtG 2023 to 2026 slice is {int(odf.n_ltg.iloc[1:].sum())} papers with a usable term, "
-              f"which is {100 * odf.n_ltg.iloc[1:].sum() / odf.n_ltg.iloc[0]:.1f}% of the earlier LtG bin."
+              f"which is {100 * odf.n_ltg.iloc[1:].sum() / odf.n_ltg.iloc[0]:.1f}% of the earlier LtG bin. "
               f"The widest tie robust 5th to 95th range in any period is {int((odf.overlap_random_p95 - odf.overlap_random_p5).max())} keywords and the widest size matched range is {int((odf.matched_overlap_p95 - odf.matched_overlap_p5).max())}. "
               f"The duplicate record merge also moves the last period: {mrg_last:.1f} instead of {rm[-1]:.1f} ({mrg_last - rm[-1]:+.1f}) in {odf.period.iloc[-1]}, so that period is sensitive to the record rule.\n")
     md.append("## Limitations\n")
@@ -637,6 +637,8 @@ def main():
         "* **Bin choice.** The period bins were chosen after looking at the year counts, to keep enough papers in both corpora.\n")
     text = "\n".join(md)
     (DOC_DIR / "RESULTS_temporal_keywords.md").write_text(text)
+    joins = [l[:80] for l in text.splitlines() if not l.startswith("|") and re.search(r"[a-z0-9)%]\.[A-Z][a-z]", re.sub(r"`[^`]*`", "", l))]
+    print(f"Prose lines with a missing space after a full stop (must be 0): {len(joins)}")
     bad = [l for l in text.splitlines() if not l.startswith("|") and any(ch in re.sub(r"`[^`]*`", "", l) for ch in "-–—")]
     print(f"\nProse lines containing a dash character: {len(bad)}")
     for l in bad:
