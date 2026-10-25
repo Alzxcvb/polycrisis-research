@@ -219,7 +219,7 @@ def _norm(t):
 def merge_records(df):
     """Keep one record per work within a corpus: same normalised title (12+ characters) and same
     first author surname, same rule as 06's paper merge. The record kept is chosen by an explicit,
-    order independent rule: highest cited_by_count, then most distinct terms, then lowest OpenAlex id.
+    order independent rule: highest cited_by_count, then most distinct terms, then first OpenAlex id in text (string) order.
     Returns (merged frame, number of merged groups, number of groups whose top two records tie on cited_by_count)."""
     keys = {}
     for i, r in df.iterrows():
@@ -543,7 +543,7 @@ def main():
         f"Keeping each OpenAlex id once, as this script does, changes {cmm[TOP_N]['deduped polycrisis']} polycrisis and {cmm[TOP_N]['deduped ltg']} LtG term counts in the {TOP_N} terms of each saved top list. "
         f"The cause is the repeated ids in the CSVs ({n_rows_poly} polycrisis rows for {len(poly)} unique ids, {n_rows_ltg} LtG rows for {len(ltg)}), which 05's route counts more than once and this script counts once. "
         f"As a result this script's top 50 lists have {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms that 05's lists lack, and the reverse; ties at the cutoff add to this. "
-        "02 also stores empty keyword cells as the text nan, which 05 drops by accident and this script treats as empty.\n"
+        "02 also stores empty keyword cells as the text nan, which 05 drops (the empty term rows) and this script treats as empty.\n"
         f"* **Periods.** Chosen after seeing the year counts, so every period has about 50 or more papers in both corpora (the script stops if a period has fewer than {MIN_PAPERS}). "
         f"Papers without a year ({int(poly['year'].isna().sum())} polycrisis, {int(ltg['year'].isna().sum())} LtG) are not placed in any period.\n"
         f"* **Measures per period.** Top {TOP_N} overlap is reported three ways: with alphabetical tie breaking (this script's tie rule; the full period count of {ov_full} matches 05's {ov05} only as a count, and the top 50 sets differ by {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms per side; shown for comparison only), with the strict set (only terms whose count is above the cutoff count), "
@@ -604,7 +604,7 @@ def main():
     md.append(f"Duplicate record sensitivity: this script keeps one row per OpenAlex id, while 06 finds more records of the same work. Applying the same title and first author rule here (06 enforces the same first author check for every corpus paper merge) removes {n_merged_p} more polycrisis and {n_merged_l} more LtG records "
               f"({n_usable_merged_p} and {n_usable_merged_l} of them with a usable term). Tie robust overlap with those merged: " + "; ".join(f"{r.period} {r.merged_overlap_random_mean:.1f} ({r.merged_overlap_random_p5:.0f} to {r.merged_overlap_random_p95:.0f}) against {r.overlap_random_mean:.1f} unmerged" for r in odf.itertuples())
               + f"; full period {fm['mean']:.1f} ({fm['p5']:.0f} to {fm['p95']:.0f}) against {full_tr['mean']:.1f}. The main tables use the id only rule. "
-              f"Which record of a merged work is kept: highest cited_by_count, then most distinct terms, then lowest OpenAlex id. Merged groups: {grp_p} polycrisis and {grp_l} LtG, of which {tied_p} and {tied_l} have the top two records tied on cited_by_count, so the second and third parts of the rule decided them.\n")
+              f"Which record of a merged work is kept: highest cited_by_count, then most distinct terms, then first OpenAlex id in text (string) order. Merged groups: {grp_p} polycrisis and {grp_l} LtG, of which {tied_p} and {tied_l} have the top two records tied on cited_by_count, so the second and third parts of the rule decided them.\n")
     md.append(f"Top {TOP_N} overlap with random tie breaking: " + ", ".join(f"{r.period} {r.overlap_random_mean:.1f} ({r.overlap_random_p5:.0f} to {r.overlap_random_p95:.0f})" for r in odf.itertuples()) + ". "
               f"Strict set overlap: " + ", ".join(f"{r.period} {r.overlap_strict}" for r in odf.itertuples()) + ". "
               f"Cosine: " + ", ".join(f"{r.period} {r.cosine_per_paper:.3f}" for r in odf.itertuples()) + ". "

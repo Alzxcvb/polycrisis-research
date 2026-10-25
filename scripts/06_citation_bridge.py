@@ -125,7 +125,7 @@ def load():
 # ── Canon builders ────────────────────────────────────────────────────────────
 
 def top_n(counter, n):
-    """Top n by count, ties broken by id for a stable result. Also return the
+    """Top n by count, ties broken by id in text (string) order for a stable result. Also return the
     count at the cutoff and how many works tie at that count outside the list."""
     ranked = sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))
     top = ranked[:n]
@@ -401,7 +401,7 @@ def null_bridge(refs, groups, canon, rng, draws):
 
 def tie_bridge(canon, n, refs, with_refs, rng, draws):
     """Bridge counts when the canon cutoff ties are handled (a) strictly (only works above the
-    cutoff count) and (b) by random tie breaking, instead of by id order."""
+    cutoff count) and (b) by random tie breaking, instead of by id text order."""
     parts = {}
     for side in ("p", "l"):
         cnt = canon["counts_" + side]
@@ -809,7 +809,7 @@ def main():
         "(c) A merged group counts as one work when it is cited and as one paper when it is tested, with the union of its members' reference lists. A merged cited work is shown with the earliest year and the type of its earliest record, and a merged corpus paper takes the year, cited_by_count, type, title and id of its most cited member record. "
         "The exact rules are `build_gmap` in `scripts/06_citation_bridge.py`. Results are shown with merged records (primary) and with unmerged records.\n"
         f"* **Canon (primary).** For each corpus, count how many of its papers cite each work. Canon_P is the top {PRIMARY_N} works "
-        f"cited by polycrisis papers. Canon_L is the top {PRIMARY_N} works cited by LtG papers. Ties at the cutoff are broken by OpenAlex id. "
+        f"cited by polycrisis papers. Canon_L is the top {PRIMARY_N} works cited by LtG papers. Ties at the cutoff are broken by the first OpenAlex id in text (string) order. "
         "No works were picked by hand.\n"
         "* **Shared canon.** Works that appear in both top N lists. They are removed from both canons for the bridge test, "
         "so a bridge paper must cite something distinctive to each tradition, not only the works both fields share.\n"
@@ -869,7 +869,7 @@ def main():
                   + "Rows below: " + (", ".join(f"N = {n} with {m} reference{'s' if m > 1 else ''} per side" for (n, m, *_), c in zip(null_rows, cat) if c == "below") or "none") + ". "
                   + "Rows above: " + (", ".join(f"N = {n} with {m} reference{'s' if m > 1 else ''} per side" for (n, m, *_), c in zip(null_rows, cat) if c == "above") or "none") + ". "
                   "Inside means within the 5th to 95th percentile range of the within corpus null.")
-    md.append("\n" + interp + " The model ignores topical clustering inside each field, which any real literature has.\n")
+    md.append("\n" + interp + " The model ignores topical clustering inside each field.\n")
     md.append("Secondary null (pooled): the same draw, but from the pooled references of both corpora together. Real papers live in one corpus, so this null is shown for comparison only.\n")
     md.append(md_table(["N", "Min refs to each canon", "Observed bridge papers", "Pooled null mean", "5th percentile", "95th percentile", "Maximum"],
                        [(n, m, obs, f"{mu:.1f}", f"{lo:.0f}", f"{hi:.0f}", mx) for n, m, obs, mu, lo, hi, mx in null_rows_pooled]))
@@ -886,20 +886,20 @@ def main():
             tied_ = sum(1 for v in cc["counts_" + side].values() if v == cut_)
             parts_.append(f"{lab} cutoff {cut_} citations with {tied_} paper{'' if tied_ == 1 else 's'} at that count")
         cited_tie_txt.append(f"N = {n}: " + "; ".join(parts_))
-    md.append("Variant 2 (most cited papers inside each corpus by cited_by_count) uses the same tie break as the main canon: ties at the cutoff are settled by lowest OpenAlex id. Papers tied at the cutoff count, by N: " + ". ".join(cited_tie_txt) + ".\n")
+    md.append("Variant 2 (most cited papers inside each corpus by cited_by_count) uses the same tie break as the main canon: ties at the cutoff are settled by the first OpenAlex id in text (string) order. Papers tied at the cutoff count, by N: " + ". ".join(cited_tie_txt) + ".\n")
     md.append("## Canon cutoff ties\n")
     t50 = [r for r in tie_rows if r["N"] == PRIMARY_N][0]
-    md.append(f"The canon is the top N works by number of citing papers, and many works tie at the cutoff count, so which tied works get in was decided by id order. "
+    md.append(f"The canon is the top N works by number of citing papers, and many works tie at the cutoff count, so which tied works get in was decided by OpenAlex id in text (string) order. "
               f"At N = {PRIMARY_N} the cutoff is {t50['cutoff_count_polycrisis']} citing papers for Canon_P ({_pl(t50['tied_polycrisis'], 'work', 'works')} tied for {_pl(t50['open_slots_polycrisis'], 'open slot', 'open slots')}) and {t50['cutoff_count_ltg']} for Canon_L ({_pl(t50['tied_ltg'], 'work', 'works')} tied for {_pl(t50['open_slots_ltg'], 'open slot', 'open slots')}). "
-              f"The table shows bridge counts with the canon built three ways: id order (the primary), the strict canon (only works above the cutoff count, so the canon is smaller than N), and random tie breaking ({TIE_BRIDGE_DRAWS} seeded draws, mean and 5th to 95th percentile). Merged records, most referenced works.\n")
-    md.append(md_table(["N", "Min refs to each canon", "Id order (primary)", "Strict canon", "Random ties: mean (5th to 95th)", "Tied works for open slots (Canon_P / Canon_L)"],
+              f"The table shows bridge counts with the canon built three ways: id text order (the primary), the strict canon (only works above the cutoff count, so the canon is smaller than N), and random tie breaking ({TIE_BRIDGE_DRAWS} seeded draws, mean and 5th to 95th percentile). Merged records, most referenced works.\n")
+    md.append(md_table(["N", "Min refs to each canon", "Id text order (primary)", "Strict canon", "Random ties: mean (5th to 95th)", "Tied works for open slots (Canon_P / Canon_L)"],
                        [(r["N"], r["min_refs_each_canon"], r["bridges_id_order"], r["bridges_strict_canon"],
                          f"{r['bridges_random_ties_mean']:.1f} ({r['bridges_random_ties_p5']:.0f} to {r['bridges_random_ties_p95']:.0f})",
                          f"{r['tied_polycrisis']} for {r['open_slots_polycrisis']} / {r['tied_ltg']} for {r['open_slots_ltg']}") for r in tie_rows]))
     md.append("\n")
     top_k = min(15, len(bdf))
     md.append(f"## Top {top_k} bridge papers by cited_by_count, with all rows tied at the last rank ({len(top15)} rows; N = {PRIMARY_N}, most referenced works, merged records)\n")
-    md.append(f"Standard competition ranking: papers with the same cited_by_count share a rank. The last shown rank is {rank15}, with cited_by_count {cut15}, shared by {_pl(n_tied15, 'bridge paper', 'bridge papers')}, so all of them are shown ({len(top15)} rows). Rows with the same rank are ordered by OpenAlex id.\n")
+    md.append(f"Standard competition ranking: papers with the same cited_by_count share a rank. The last shown rank is {rank15}, with cited_by_count {cut15}, shared by {_pl(n_tied15, 'bridge paper', 'bridge papers')}, so all of them are shown ({len(top15)} rows). Rows with the same rank are ordered by OpenAlex id in text (string) order.\n")
     md.append(md_table(["Rank", "Title", "Year", "Corpus", "Refs to Canon_P", "Refs to Canon_L", "Cited by"],
                        [(rank_of[r.openalex_id], r.title, int(r.year) if pd.notna(r.year) else "", r.corpus, r.n_refs_canon_polycrisis,
                          r.n_refs_canon_ltg, r.cited_by_count) for r in top15.itertuples()]))
@@ -924,7 +924,7 @@ def main():
     md.append("### Canon work years and the trend\n")
     md.append(f"The canon is made from what the corpus papers cite, and {pct(int((py >= 2024).sum()), len(py))} of polycrisis papers with a year are from 2024 or later, so the canon can hold recent works that older papers could not cite. "
               f"Canon_P works (after shared removal) were published from {min(yp)} to {max(yp)} (median {med(yp):.1f}, year known for {len(yp)} of {len(prim['eff_p'])} works); Canon_L works from {min(yl)} to {max(yl)} (median {med(yl):.1f}, year known for {len(yl)} of {len(prim['eff_l'])} works). "
-              f"Pooled, the median canon work year is {med(ypool):.1f} and the newest is {Y_MAX}. A paper published before a canon work cannot cite it, so low shares in early periods are partly mechanical.\n")
+              f"Pooled, the median canon work year is {med(ypool):.1f} and the newest is {Y_MAX}. A paper published before a canon work cannot cite it.\n")
     md.append(f"Restricted check: counting only papers published in {Y_MED} or later (the median canon year, rounded up), {r_med[2]} of {r_med[1]} papers with a reference list are bridges ({r_med[3]}). "
               f"Counting only papers published in {Y_MID} or later (the higher of the two canon medians), {r_mid[2]} of {r_mid[1]} ({r_mid[3]}). "
               f"Counting only papers published in {Y_MAX} or later (the newest canon work year), {r_max[2]} of {r_max[1]} ({r_max[3]}). "
@@ -955,7 +955,7 @@ def main():
         f"* **Refetch gaps.** 06a asked OpenAlex for every id; {n_not_refetched} of {len(all0)} ids returned no record, and for those the saved list was used. "
         f"Titles could not be resolved for {n_title_missing} of {len(canon_ids)} canon works.\n"
         f"* **Thin canons.** At N = {PRIMARY_N} the cutoff is {c50['cut'][0]} citing papers for Canon_P and {c50['cut'][1]} for Canon_L, and several works tie at the cutoff, "
-        f"so which tied works are in the canon is decided by id order. At N = {PRIMARY_N} bridge counts are {t50_1['bridges_id_order']} (id order), {t50_1['bridges_strict_canon']} (strict canon) and {t50_1['bridges_random_ties_mean']:.1f} on average with random ties (5th to 95th {t50_1['bridges_random_ties_p5']:.0f} to {t50_1['bridges_random_ties_p95']:.0f}); see the cutoff ties section. Treat the canon as a rough core, not a settled list.\n"
+        f"so which tied works are in the canon is decided by OpenAlex id in text (string) order. At N = {PRIMARY_N} bridge counts are {t50_1['bridges_id_order']} (id text order), {t50_1['bridges_strict_canon']} (strict canon) and {t50_1['bridges_random_ties_mean']:.1f} on average with random ties (5th to 95th {t50_1['bridges_random_ties_p5']:.0f} to {t50_1['bridges_random_ties_p95']:.0f}); see the cutoff ties section. Treat the canon as a rough core, not a settled list.\n"
         f"* **Partial 2026.** The latest publication date in the data is {latest_date}, so 2026 holds only part of a year.\n")
     text = "\n".join(md)
     (DOC_DIR / "RESULTS_citation_bridge.md").write_text(text)
