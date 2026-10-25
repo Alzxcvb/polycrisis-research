@@ -245,23 +245,17 @@ def main():
         deg[b] += 1
     nodes = sorted(tabP)
     btw = {}
-    if nx is not None:
-        G = nx.Graph()
-        G.add_nodes_from(nodes)
-        G.add_edges_from(sorted(edges))
-        btw = nx.betweenness_centrality(G, normalized=True)
-        ncomp = nx.number_connected_components(G)
-        giant = max(len(c) for c in nx.connected_components(G))
-        print(f"B3: networkx {nx.__version__}; nodes {G.number_of_nodes()}, edges {G.number_of_edges()}, components {ncomp}, largest component {giant}")
-        key = lambda a: (-round(btw[a], BTW_DECIMALS), -deg[a], a)
-        b3_all = sorted(nodes, key=key)
-        b3 = b3_all[:TOP_N]
-    else:
-        ncomp = giant = None
-        print(f"B3: networkx not installed; degree only. nodes {len(nodes)}, edges {len(edges)}")
-        b3_all = sorted(nodes, key=lambda a: (-deg[a], a))
-        b3 = b3_all[:TOP_N]
-    tie_key = (lambda a: (round(btw[a], BTW_DECIMALS), deg[a])) if nx else (lambda a: deg[a])
+    G = nx.Graph()
+    G.add_nodes_from(nodes)
+    G.add_edges_from(sorted(edges))
+    btw = nx.betweenness_centrality(G, normalized=True)
+    ncomp = nx.number_connected_components(G)
+    giant = max(len(c) for c in nx.connected_components(G))
+    print(f"B3: networkx {nx.__version__}; nodes {G.number_of_nodes()}, edges {G.number_of_edges()}, components {ncomp}, largest component {giant}")
+    key = lambda a: (-round(btw[a], BTW_DECIMALS), -deg[a], a)
+    b3_all = sorted(nodes, key=key)
+    b3 = b3_all[:TOP_N]
+    tie_key = lambda a: (round(btw[a], BTW_DECIMALS), deg[a])
     tie_size = Counter(tie_key(a) for a in nodes)
     other_tied = lambda a: tie_size[tie_key(a)] - 1      # other authors with the same degree and rounded betweenness
     tie15 = tie_key(b3_all[TABLE_N - 1])
@@ -287,19 +281,14 @@ def main():
     for a, b in sedges:
         sdeg[a] += 1
         sdeg[b] += 1
-    sens_rank = []
-    if nx is not None:
-        SG = nx.Graph()
-        SG.add_nodes_from(nodes)
-        SG.add_edges_from(sorted(sedges))
-        sb = nx.betweenness_centrality(SG, normalized=True)
-        sens_rank = sorted(nodes, key=lambda a: (-round(sb[a], BTW_DECIMALS), -sdeg[a], a))
-    else:
-        sb = {}
-        sens_rank = sorted(nodes, key=lambda a: (-sdeg[a], a))
+    SG = nx.Graph()
+    SG.add_nodes_from(nodes)
+    SG.add_edges_from(sorted(sedges))
+    sb = nx.betweenness_centrality(SG, normalized=True)
+    sens_rank = sorted(nodes, key=lambda a: (-round(sb[a], BTW_DECIMALS), -sdeg[a], a))
     sens_top = sens_rank[:TOP_N]
     sens_overlap = len(set(sens_top) & set(b3))
-    skey = (lambda a: (round(sb[a], BTW_DECIMALS), sdeg[a])) if nx else (lambda a: sdeg[a])
+    skey = lambda a: (round(sb[a], BTW_DECIMALS), sdeg[a])
     s_last = skey(sens_rank[TOP_N - 1])
     s_tied_pos = [i for i, a in enumerate(sens_rank) if skey(a) == s_last]
     s_tie_other = len(s_tied_pos) - 1
@@ -308,11 +297,11 @@ def main():
     print(f"B3: largest author list on one merged polycrisis paper: {max_auth}")
     write_csv(DATA_DIR / "outreach_B3.csv",
               ["rank", "openalex_author_id", "name", "degree", "betweenness", "other_authors_tied_with_this_row", "polycrisis_papers", "institutions"],
-              [[i + 1, a, name_of(tabP[a]), deg[a], (f"{btw[a]:.8f}" if nx else ""), other_tied(a), len(tabP[a]["papers"]), "; ".join(insts(tabP[a]))]
+              [[i + 1, a, name_of(tabP[a]), deg[a], f"{btw[a]:.8f}", other_tied(a), len(tabP[a]["papers"]), "; ".join(insts(tabP[a]))]
                for i, a in enumerate(b3)])
     write_csv(DATA_DIR / "outreach_B3_sensitivity.csv",
               ["rank", "openalex_author_id", "name", "degree", "betweenness", "in_primary_top_30"],
-              [[i + 1, a, name_of(tabP[a]), sdeg[a], (f"{sb[a]:.8f}" if nx else ""), "yes" if a in b3 else "no"]
+              [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.8f}", "yes" if a in b3 else "no"]
                for i, a in enumerate(sens_top)])
     overlap_b1_b3 = len(set(b1_top) & set(b3))
     print(f"B3: authors in both the B1 and B3 top {TOP_N}: {overlap_b1_b3}")
@@ -434,12 +423,12 @@ def main():
     t2 = md_table(["Rank", "OpenAlex author id", "Name", "Polycrisis papers", "LtG papers", "Min", "Polycrisis without shared papers", "LtG without shared papers", "Total citations", "Bridge papers (06)", "Institutions seen (up to 3)"],
                   [[i + 1, r[0], name_of(tabAll[r[0]]), r[1], r[2], r[3], r[7], r[8], r[5], (", ".join(r[6]) if r[6] else "none"), short_inst(tabAll[r[0]])]
                    for i, r in enumerate(rows2[:TABLE_N])])
-    bcol = "Betweenness" if nx else "Betweenness (not computed)"
+    bcol = "Betweenness"
     t3 = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "Other authors tied with this row", "Polycrisis papers", "Institutions seen (up to 3)"],
-                  [[i + 1, a, name_of(tabP[a]), deg[a], (f"{btw[a]:.8f}" if nx else "n/a"), other_tied(a), len(tabP[a]["papers"]), short_inst(tabP[a])]
+                  [[i + 1, a, name_of(tabP[a]), deg[a], f"{btw[a]:.8f}", other_tied(a), len(tabP[a]["papers"]), short_inst(tabP[a])]
                    for i, a in enumerate(b3_rows)])
     t3s = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "In primary top 30"],
-                   [[i + 1, a, name_of(tabP[a]), sdeg[a], (f"{sb[a]:.8f}" if nx else "n/a"), "yes" if a in b3 else "no"]
+                   [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.8f}", "yes" if a in b3 else "no"]
                     for i, a in enumerate(sens_top[:TABLE_N])])
     t4 = md_table(["Rank", "OpenAlex author id", "Name", "Target journal papers", "Total citations", "Journals", "In polycrisis", "In LtG", "Institutions seen (up to 3)"],
                   [[i + 1, a, name_of(tab4[a]), len(tab4[a]["papers"]), tab4[a]["cites"], ", ".join(jr[a]),
@@ -448,15 +437,11 @@ def main():
     tj = md_table(["Source display name", "Result", "Merged papers 2024 to 2026", "Authors"] + [str(y) for y in range(YEAR_MIN, YEAR_MAX + 1)], jr_rows)
     near_txt = ("; ".join(f"{s} ({c})" for s, c in sorted(near.items())) if near else "none")
     nodash_names = ", ".join(TARGET_JOURNALS)
-    if nx:
-        b3_method = (f"The network has one node per author id in the polycrisis corpus and one edge between two authors who share at least one merged polycrisis paper. "
-                     f"It has {len(nodes):,} nodes and {len(edges):,} edges in {ncomp:,} connected components; the largest has {giant:,} nodes. "
-                     f"Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version {nx.__version__}), normalised, computed exactly. "
-                     f"The list is ranked by betweenness, then degree, then author id in text order. "
-                     f"The largest number of author ids on one paper is {max_auth:,}. Edges join only authors who have an author id, so authorships without an id add no edges. Every paper adds a full set of edges among its authors with an id, with no cap, so a long author list adds many edges. networkx 3.2.1 is required to run the script; the script stops with a message if networkx is missing.")
-    else:
-        b3_method = (f"networkx is not installed in this environment, so only degree is computed. The network has {len(nodes):,} nodes and {len(edges):,} edges. "
-                     f"The list is ranked by degree, then author id in text order.")
+    b3_method = (f"The network has one node per author id in the polycrisis corpus and one edge between two authors who share at least one merged polycrisis paper. "
+                 f"It has {len(nodes):,} nodes and {len(edges):,} edges in {ncomp:,} connected components; the largest has {giant:,} nodes. "
+                 f"Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version {nx.__version__}), normalised, computed exactly. "
+                 f"The list is ranked by betweenness, then degree, then author id in text order. "
+                 f"The largest number of author ids on one paper is {max_auth:,}. Edges join only authors who have an author id, so authorships without an id add no edges. Every paper adds a full set of edges among its authors with an id, with no cap, so a long author list adds many edges. networkx 3.2.1 is required to run the script; the script stops with a message if networkx is missing.")
     lines = f"""# Outreach target lists from the corpus authorships
 
 Generated by `scripts/08_outreach_targets.py`. Every number below is computed and printed by that script. These are research leads. This note holds no contact details.
@@ -540,7 +525,7 @@ No list filters by work type. Errata, editorials and other non article records c
 - The corpora are keyword searches, not the whole literature. {len(P):,} polycrisis papers and {len(L):,} LtG papers say nothing about authors who write on these topics under other terms. Counts describe the corpora only.
 - B3 is built from polycrisis papers only. Coauthor links that exist only through LtG papers are not in the network. Papers with long author lists add many edges, and the primary list applies no cap; the sensitivity table shows the effect of a cap of {SENS_MAX_AUTHORS}.
 - Ties are common in every list. The order inside a full tie comes from the author id, which carries no meaning. See the Ties section.
-- Institution names come from OpenAlex affiliation matching and are not checked. Each list shows every institution seen on the papers described under Basis of the figures. Treat them as unverified.
+- Institution names come from OpenAlex affiliation matching and are not checked. The note tables show up to 3 institutions per author and the CSV files list all of those seen, on the papers described under Basis of the figures. Treat them as unverified.
 - B2 depends on the {len(both_units):,} papers that are in both corpora, as described above.
 - The script needs `data/canon_metadata_cache.json` and the raw files. `data/` is gitignored, so a clean clone must rebuild them (scripts 01 to 06) before this script can run.
 - B4 uses the primary location only. A paper listed under another source name is not matched. Journal names were matched exactly as written, so renamed or abbreviated forms are missed.

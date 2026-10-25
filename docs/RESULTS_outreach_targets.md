@@ -194,7 +194,7 @@ No list filters by work type. Errata, editorials and other non article records c
 - The corpora are keyword searches, not the whole literature. 1,385 polycrisis papers and 1,080 LtG papers say nothing about authors who write on these topics under other terms. Counts describe the corpora only.
 - B3 is built from polycrisis papers only. Coauthor links that exist only through LtG papers are not in the network. Papers with long author lists add many edges, and the primary list applies no cap; the sensitivity table shows the effect of a cap of 20.
 - Ties are common in every list. The order inside a full tie comes from the author id, which carries no meaning. See the Ties section.
-- Institution names come from OpenAlex affiliation matching and are not checked. Each list shows every institution seen on the papers described under Basis of the figures. Treat them as unverified.
+- Institution names come from OpenAlex affiliation matching and are not checked. The note tables show up to 3 institutions per author and the CSV files list all of those seen, on the papers described under Basis of the figures. Treat them as unverified.
 - B2 depends on the 7 papers that are in both corpora, as described above.
 - The script needs `data/canon_metadata_cache.json` and the raw files. `data/` is gitignored, so a clean clone must rebuild them (scripts 01 to 06) before this script can run.
 - B4 uses the primary location only. A paper listed under another source name is not matched. Journal names were matched exactly as written, so renamed or abbreviated forms are missed.
