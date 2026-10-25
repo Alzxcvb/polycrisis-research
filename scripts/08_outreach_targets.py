@@ -337,6 +337,17 @@ def main():
     print(f"B4: papers {len(b4_units)}; authors {len(tab4)}; per journal {{{', '.join(f'{s}: {len(pap4[s])}' for s in TARGET_JOURNALS)}}}")
     print(f"B4: near miss source names (contain a target name, not an exact match): {dict(near)}")
 
+    yrs_by_unit = defaultdict(set)
+    for src_, u_, wid_, y_, ty_, na_ in rec_info:
+        if y_ is not None:
+            yrs_by_unit[u_].add(int(y_))
+    n_diff_years = sum(1 for u_ in (P | L) if len(yrs_by_unit.get(u_, ())) > 1)
+    own_year_units = {u_ for src_, u_, wid_, y_, ty_, na_ in rec_info
+                      if src_ in TARGET_JOURNALS and y_ is not None and YEAR_MIN <= int(y_) <= YEAR_MAX}
+    same_result = own_year_units == b4_units
+    print(f"B4: merged papers whose records have differing years: {n_diff_years}; same paper set if each record's own year is used: {same_result}")
+    yr_clause = ("; the set of matched papers is the same if each record's own year is used instead" if same_result
+                 else "; using each record's own year would change the set of matched papers")
     recs = {}
     for src, u, wid, y, ty, na in rec_info:
         recs[(src, wid)] = (u, y, ty, na)
@@ -436,7 +447,7 @@ Sensitivity (the primary list above is unchanged): the same ranking with the {n_
 
 ## B4. Authors in the target journals, 2024 to 2026
 
-Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. Rank authors by papers in this set, then total citations, then author id.
+Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. {n_diff_years:,} merged papers have records with differing years{yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
 Source names that contain a target name but are not an exact match, and so were not used (papers in range): {near_txt}.
 

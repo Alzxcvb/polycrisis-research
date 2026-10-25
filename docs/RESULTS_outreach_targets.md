@@ -120,7 +120,7 @@ Sensitivity (the primary list above is unchanged): the same ranking with the 11 
 
 ## B4. Authors in the target journals, 2024 to 2026
 
-Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: Global Sustainability, Scientometrics, Sustainability, Journal of Industrial Ecology. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from 2024 to 2026. Rank authors by papers in this set, then total citations, then author id.
+Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: Global Sustainability, Scientometrics, Sustainability, Journal of Industrial Ecology. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from 2024 to 2026. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. 19 merged papers have records with differing years; the set of matched papers is the same if each record's own year is used instead. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
 Source names that contain a target name but are not an exact match, and so were not used (papers in range): Frontiers in Sustainability (2); Nature Sustainability (1); SCI Sustainability (1); Strategies for sustainability (1); Sustainability Science (4); Sustainability Science Practice and Policy (1); World sustainability series (2).
 
