@@ -68,7 +68,7 @@ Effect of the shared papers: only 7 merged papers are in both corpora, yet 20 of
 
 ## B3. Central authors in the polycrisis coauthor network
 
-Method: The network has one node per author id in the polycrisis corpus and one edge between two authors who share at least one merged polycrisis paper. It has 2,848 nodes and 10,614 edges in 1,028 connected components; the largest has 202 nodes. Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version 3.2.1), normalised, computed exactly. The list is ranked by betweenness, then degree, then author id in text order. The largest author list on one paper has 49 authors. Every paper adds a full set of edges among its authors, with no cap, so a long author list adds many edges. Betweenness is rounded to 8 decimals before ranking, so authors whose values differ by less than that count as tied and are then ordered by degree and author id.
+Method: The network has one node per author id in the polycrisis corpus and one edge between two authors who share at least one merged polycrisis paper. It has 2,848 nodes and 10,614 edges in 1,028 connected components; the largest has 202 nodes. Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version 3.2.1), normalised, computed exactly. The list is ranked by betweenness, then degree, then author id in text order. The largest number of author ids on one paper is 49. Edges join only authors who have an author id, so authorships without an id add no edges. Every paper adds a full set of edges among its authors with an id, with no cap, so a long author list adds many edges. networkx 3.2.1 is required to run the script; the script stops with a message if networkx is missing. Betweenness is rounded to 8 decimals before ranking, so authors whose values differ by less than that count as tied and are then ordered by degree and author id.
 
 Counts: 6 authors are in both the B1 and B3 lists. 13 authors have the same degree and rounded betweenness as rank 15, at ranks 15 to 27; the table shows all of them, ordered only by author id. 0 other authors are tied with rank 30. Of the top 30, 16 authors are coauthors on the 2 papers with the longest author list (49 author ids each): W4414512012, W7125682156. File: `data/outreach_B3.csv`.
 
@@ -128,7 +128,7 @@ Method: the target journals are the four journals chosen for this list (from the
 
 Source names that contain a target name but are not an exact match, and so were not used (papers in range): Frontiers in Sustainability (2); Nature Sustainability (1); SCI Sustainability (1); Strategies for sustainability (1); Sustainability Science (4); Sustainability Science Practice and Policy (1); World sustainability series (2).
 
-Counts: 30 merged papers and 92 authors. File: `data/outreach_B4.csv`.
+Counts: 30 merged papers and 92 authors. 2 papers add no author because no authorship on it has an author id (W4410237573 (0 authorships on record), W7111291106 (6 authorships on record)). File: `data/outreach_B4.csv`.
 
 | Source display name | Result | Merged papers 2024 to 2026 | Authors | 2024 | 2025 | 2026 |
 |---|---|---|---|---|---|---|
@@ -137,7 +137,7 @@ Counts: 30 merged papers and 92 authors. File: `data/outreach_B4.csv`.
 | Sustainability | matched | 7 | 25 | 2 | 5 | 0 |
 | Journal of Industrial Ecology | matched | 1 | 0 | 0 | 1 | 0 |
 
-Why some rows are small or empty. The zero rows are explained by the records in the corpora, not by the matching rule:
+Why some rows are small or empty. The raw files hold only the primary location of each record, so a paper listed under another location cannot be checked here. The small rows are explained by these records:
 
 | Source display name | Raw records with this name | Outside the window (years) | In window with no authorships (year, type) |
 |---|---|---|---|

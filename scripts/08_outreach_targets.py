@@ -49,8 +49,9 @@ INST_SHOWN = 3          # institutions shown per author in the note tables (the 
 
 try:
     import networkx as nx
-except ImportError:      # degree only
-    nx = None
+except ImportError:
+    raise SystemExit("networkx is required (tested with 3.2.1) and is not in requirements.txt. "
+                     "Install it in the venv with: .venv/bin/python -m pip install networkx==3.2.1")
 
 # ── Reuse 06 so counts agree ──────────────────────────────────────────────────
 _spec = importlib.util.spec_from_file_location("bridge06", ROOT / "scripts" / "06_citation_bridge.py")
@@ -331,6 +332,12 @@ def main():
                     near[s] += 1
     b4_units = set().union(*pap4.values()) if pap4 else set()
     tab4 = build_author_table(b4_units, meta, unit_auth)
+    b4_noauth = sorted(u for u in b4_units if not unit_auth.get(u))
+    noauth_n = {}
+    for src_, u_, wid_, y_, ty_, n_ in rec_info:
+        if u_ in b4_noauth:
+            noauth_n[u_] = max(noauth_n.get(u_, 0), n_)
+    print(f"B4: papers that add no author: {b4_noauth}")
     b4 = sorted(tab4, key=lambda a: (-len(tab4[a]["papers"]), -tab4[a]["cites"], a))
     jr = {a: sorted({s for s in TARGET_JOURNALS if any(p in pap4[s] for p in tab4[a]["papers"])}) for a in tab4}
     write_csv(DATA_DIR / "outreach_B4.csv",
@@ -446,7 +453,7 @@ def main():
                      f"It has {len(nodes):,} nodes and {len(edges):,} edges in {ncomp:,} connected components; the largest has {giant:,} nodes. "
                      f"Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version {nx.__version__}), normalised, computed exactly. "
                      f"The list is ranked by betweenness, then degree, then author id in text order. "
-                     f"The largest author list on one paper has {max_auth:,} authors. Every paper adds a full set of edges among its authors, with no cap, so a long author list adds many edges.")
+                     f"The largest number of author ids on one paper is {max_auth:,}. Edges join only authors who have an author id, so authorships without an id add no edges. Every paper adds a full set of edges among its authors with an id, with no cap, so a long author list adds many edges. networkx 3.2.1 is required to run the script; the script stops with a message if networkx is missing.")
     else:
         b3_method = (f"networkx is not installed in this environment, so only degree is computed. The network has {len(nodes):,} nodes and {len(edges):,} edges. "
                      f"The list is ranked by degree, then author id in text order.")
@@ -504,11 +511,11 @@ Method: the target journals are the four journals chosen for this list (from the
 
 Source names that contain a target name but are not an exact match, and so were not used (papers in range): {near_txt}.
 
-Counts: {len(b4_units):,} merged papers and {len(tab4):,} authors. File: `data/outreach_B4.csv`.
+Counts: {len(b4_units):,} merged papers and {len(tab4):,} authors. {pl(len(b4_noauth), 'paper adds', 'papers add')} no author because no authorship on it has an author id ({', '.join(f'{u} ({noauth_n[u]} authorships on record)' for u in b4_noauth) if b4_noauth else 'none'}). File: `data/outreach_B4.csv`.
 
 {tj}
 
-Why some rows are small or empty. The zero rows are explained by the records in the corpora, not by the matching rule:
+Why some rows are small or empty. The raw files hold only the primary location of each record, so a paper listed under another location cannot be checked here. The small rows are explained by these records:
 
 {wtab}
 
