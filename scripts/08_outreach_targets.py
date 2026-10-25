@@ -55,7 +55,7 @@ INST_SHOWN = 3          # institutions shown per author in the note tables (the 
 try:
     import networkx as nx
 except ImportError:
-    raise SystemExit("networkx is required (tested with " + NX_TESTED + ") and is not in requirements.txt. "
+    raise SystemExit("networkx is required (tested with " + NX_TESTED + ") and is not in the committed requirements.txt. "
                      "Install it in the venv with: .venv/bin/python -m pip install networkx==" + NX_TESTED)
 
 # ── Reuse 06 so counts agree ──────────────────────────────────────────────────
@@ -499,7 +499,7 @@ Sensitivity (the primary list above is unchanged): the same ranking with the {n_
 
 ## B4. Authors in the target journals, {WINDOW}
 
-Method: the target journals are the four journals chosen for this list (from the outreach plan): {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. {n_diff_years:,} merged papers (counted over all their raw records, in both corpora) have records with differing years{yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
+Method: the target journals are the four journals chosen for this list (from the outreach plan): {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. Of the {len(P | L):,} merged papers in either corpus, {n_diff_years:,} have records with differing years (counted over all their raw records, not only the B4 papers){yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
 Source names that contain a target name as a case insensitive substring but are not an exact match, and so were not used (papers in range): {near_txt}.
 
