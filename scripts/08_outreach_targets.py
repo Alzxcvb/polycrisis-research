@@ -64,7 +64,7 @@ def short(x):
 
 
 def merged_papers():
-    """Merged units exactly as 06 builds them. Returns (unit meta, corpus membership of units, gmap)."""
+    """Merged units exactly as 06 builds them. Returns (unit meta, corpus membership of units, gmap, number of merged groups, number of raw records)."""
     raw_meta, raw_members, raw_refs, _, _ = b06.load()
     ucount = Counter()
     pc = b06.ref_counts(raw_members["polycrisis"], raw_refs)
@@ -178,7 +178,7 @@ def main():
     print(f"Raw records: {n_raw}; merged groups: {n_groups}; merged papers: {len(meta)}")
     print(f"Merged papers: polycrisis {len(P)}, LtG {len(L)}, in both {len(both_units)}")
     print(f"Authorships read: {st['authorships']}; without author id: {st['without author id']}")
-    print(f"Papers with no authorship at all: {sum(1 for u in meta.index if not unit_auth.get(u))}")
+    print(f"Papers with no usable author id: {sum(1 for u in meta.index if not unit_auth.get(u))}")
 
     tabP = build_author_table(P, meta, unit_auth)
     tabL = build_author_table(L, meta, unit_auth)
@@ -244,7 +244,6 @@ def main():
         deg[a] += 1
         deg[b] += 1
     nodes = sorted(tabP)
-    btw = {}
     G = nx.Graph()
     G.add_nodes_from(nodes)
     G.add_edges_from(sorted(edges))
@@ -300,8 +299,8 @@ def main():
               [[i + 1, a, name_of(tabP[a]), deg[a], f"{btw[a]:.8f}", other_tied(a), len(tabP[a]["papers"]), "; ".join(insts(tabP[a]))]
                for i, a in enumerate(b3)])
     write_csv(DATA_DIR / "outreach_B3_sensitivity.csv",
-              ["rank", "openalex_author_id", "name", "degree", "betweenness", "in_primary_top_30"],
-              [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.8f}", "yes" if a in b3 else "no"]
+              ["rank", "openalex_author_id", "name", "degree", "betweenness", "in_primary_top_30", "institutions"],
+              [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.8f}", "yes" if a in b3 else "no", "; ".join(insts(tabP[a]))]
                for i, a in enumerate(sens_top)])
     overlap_b1_b3 = len(set(b1_top) & set(b3))
     print(f"B3: authors in both the B1 and B3 top {TOP_N}: {overlap_b1_b3}")
@@ -326,7 +325,7 @@ def main():
     for src_, u_, wid_, y_, ty_, n_ in rec_info:
         if u_ in b4_noauth:
             noauth_n[u_] = max(noauth_n.get(u_, 0), n_)
-    print(f"B4: papers that add no author: {b4_noauth}")
+    print(f"B4: papers that add no author: {b4_noauth}; authorships on record: {noauth_n}")
     b4 = sorted(tab4, key=lambda a: (-len(tab4[a]["papers"]), -tab4[a]["cites"], a))
     jr = {a: sorted({s for s in TARGET_JOURNALS if any(p in pap4[s] for p in tab4[a]["papers"])}) for a in tab4}
     write_csv(DATA_DIR / "outreach_B4.csv",
@@ -336,7 +335,7 @@ def main():
                 "yes" if a in tabP else "no", "yes" if a in tabL else "no", "; ".join(insts(tab4[a]))]
                for i, a in enumerate(b4)])
     print(f"B4: papers {len(b4_units)}; authors {len(tab4)}; per journal {{{', '.join(f'{s}: {len(pap4[s])}' for s in TARGET_JOURNALS)}}}")
-    print(f"B4: near miss source names (contain a target name, not an exact match): {dict(near)}")
+    print(f"B4: near miss source names (case insensitive substring of a target name, not an exact match): {dict(near)}")
 
     def tie_span(order, keyf, pos):
         k = keyf(order[pos - 1])
@@ -408,6 +407,7 @@ def main():
     jr_rows = []
     for s in TARGET_JOURNALS:
         yrs = {y: name_hits[(s, y)] for y in range(YEAR_MIN, YEAR_MAX + 1)}
+        print(f"B4 {s}: merged papers by year {yrs}; authors {len({a for a in tab4 if s in jr[a]})}")
         jr_rows.append([s, "matched" if pap4[s] else "no match", len(pap4[s]), len(
             {a for a in tab4 if s in jr[a]})] + [yrs[y] for y in range(YEAR_MIN, YEAR_MAX + 1)])
     # Source-name matching uses primary_location of every raw record of a merged paper.
@@ -494,7 +494,7 @@ Sensitivity (the primary list above is unchanged): the same ranking with the {n_
 
 Method: the target journals are the four journals chosen for this list (from the outreach plan): {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. {n_diff_years:,} merged papers (counted over all their raw records, in both corpora) have records with differing years{yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
-Source names that contain a target name but are not an exact match, and so were not used (papers in range): {near_txt}.
+Source names that contain a target name as a case insensitive substring but are not an exact match, and so were not used (papers in range): {near_txt}.
 
 Counts: {len(b4_units):,} merged papers and {len(tab4):,} authors. {pl(len(b4_noauth), 'paper adds', 'papers add')} no author because no authorship on it has an author id ({', '.join(f'{u} ({noauth_n[u]} authorships on record)' for u in b4_noauth) if b4_noauth else 'none'}). File: `data/outreach_B4.csv`.
 
