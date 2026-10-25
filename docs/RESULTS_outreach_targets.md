@@ -124,7 +124,7 @@ Sensitivity (the primary list above is unchanged): the same ranking with the 11 
 
 ## B4. Authors in the target journals, 2024 to 2026
 
-Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: Global Sustainability, Scientometrics, Sustainability, Journal of Industrial Ecology. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from 2024 to 2026. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. 30 merged papers (counted over all their raw records, in both corpora) have records with differing years; the set of matched papers is the same if each record's own year is used instead. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
+Method: the target journals are the four journals chosen for this list (from the outreach plan): Global Sustainability, Scientometrics, Sustainability, Journal of Industrial Ecology. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from 2024 to 2026. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. 30 merged papers (counted over all their raw records, in both corpora) have records with differing years; the set of matched papers is the same if each record's own year is used instead. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
 Source names that contain a target name but are not an exact match, and so were not used (papers in range): Frontiers in Sustainability (2); Nature Sustainability (1); SCI Sustainability (1); Strategies for sustainability (1); Sustainability Science (4); Sustainability Science Practice and Policy (1); World sustainability series (2).
 
@@ -164,6 +164,17 @@ Why some rows are small or empty. The zero rows are explained by the records in 
 | 14 | A5117608213 | Jenson Chong-Leng Goh | 2 | 3 | Global Sustainability | yes | yes | Singapore Institute of Technology; Turība University |
 | 15 | A5117608214 | Gillian S. Martin Mehers | 2 | 3 | Global Sustainability | yes | yes | Erasmus University Rotterdam |
 
+## Ties
+
+A full tie means every sort key before the author id is equal. Where a tie crosses the end of a 15 row table or the cut at 30, the rows beyond the cut have the same keys as the last row shown. The B3 table prints the whole tie at rank 15; the other tables stop at rank 15, and the CSV files hold the full lists (B1 and B3 hold the top 30).
+
+| List | Order (each step applies only when the earlier ones tie) | Full tie at rank 15 | Full tie at rank 30 |
+|---|---|---|---|
+| B1 | papers, then total citations, then author id | no tie | 3 tied, ranks 28 to 30 |
+| B2 | smaller of the two corpus counts, then total papers, then total citations, then author id | 6 tied, ranks 14 to 19 | list ends before this rank |
+| B3 | betweenness rounded to 8 decimals, then degree, then author id | 13 tied, ranks 15 to 27 | no tie |
+| B4 | papers in the target journals, then total citations, then author id | 8 tied, ranks 9 to 16 | 20 tied, ranks 26 to 45 |
+
 ## Work types
 
 No list filters by work type. Errata, editorials and other non article records count as papers like any other. The type is OpenAlex's type for the merged paper's most cited record. Counts of papers that are not of type article, for the papers behind each list:
@@ -182,7 +193,7 @@ No list filters by work type. Errata, editorials and other non article records c
 - 694 of 5,782 authorships have no author id and are not counted.
 - The corpora are keyword searches, not the whole literature. 1,385 polycrisis papers and 1,080 LtG papers say nothing about authors who write on these topics under other terms. Counts describe the corpora only.
 - B3 is built from polycrisis papers only. Coauthor links that exist only through LtG papers are not in the network. Papers with long author lists add many edges, and the primary list applies no cap; the sensitivity table shows the effect of a cap of 20.
-- Ties are common in B1 and B3 (see the tie counts above). The order inside a tie comes from the author id, which carries no meaning.
+- Ties are common in every list. The order inside a full tie comes from the author id, which carries no meaning. See the Ties section.
 - Institution names come from OpenAlex affiliation matching and are not checked. Each list shows every institution seen on the papers described under Basis of the figures. Treat them as unverified.
 - B2 depends on the 7 papers that are in both corpora, as described above.
 - The script needs `data/canon_metadata_cache.json` and the raw files. `data/` is gitignored, so a clean clone must rebuild them (scripts 01 to 06) before this script can run.

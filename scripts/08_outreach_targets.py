@@ -342,6 +342,31 @@ def main():
     print(f"B4: papers {len(b4_units)}; authors {len(tab4)}; per journal {{{', '.join(f'{s}: {len(pap4[s])}' for s in TARGET_JOURNALS)}}}")
     print(f"B4: near miss source names (contain a target name, not an exact match): {dict(near)}")
 
+    def tie_span(order, keyf, pos):
+        k = keyf(order[pos - 1])
+        idx = [i for i, a in enumerate(order) if keyf(a) == k]
+        return len(idx), idx[0] + 1, idx[-1] + 1
+    tie_rows = []
+    specs = [
+        ("B1", "papers, then total citations, then author id", b1, lambda a: (len(tabP[a]["papers"]), tabP[a]["cites"])),
+        ("B2", "smaller of the two corpus counts, then total papers, then total citations, then author id", [r[0] for r in rows2], None),
+        ("B3", f"betweenness rounded to {BTW_DECIMALS} decimals, then degree, then author id", b3_all, tie_key),
+        ("B4", "papers in the target journals, then total citations, then author id", b4, lambda a: (len(tab4[a]["papers"]), tab4[a]["cites"])),
+    ]
+    r2 = {r[0]: r for r in rows2}
+    for nm, seq, order, kf in specs:
+        if nm == "B2":
+            kf = lambda a: (r2[a][3], r2[a][4], r2[a][5])
+        cells = []
+        for pos in (TABLE_N, TOP_N):
+            if pos > len(order):
+                cells.append("list ends before this rank")
+                continue
+            n_, lo, hi = tie_span(order, kf, pos)
+            cells.append(f"{n_} tied, ranks {lo} to {hi}" if n_ > 1 else "no tie")
+            print(f"Ties {nm} at rank {pos}: {n_} authors with identical sort keys before the id, ranks {lo} to {hi}")
+        tie_rows.append([nm, seq, cells[0], cells[1]])
+    tietab = md_table(["List", "Order (each step applies only when the earlier ones tie)", f"Full tie at rank {TABLE_N}", f"Full tie at rank {TOP_N}"], tie_rows)
     def type_counts(units):
         c = Counter(str(meta.loc[u, "type"]) for u in units)
         non = sum(v for k, v in c.items() if k != "article")
@@ -475,7 +500,7 @@ Sensitivity (the primary list above is unchanged): the same ranking with the {n_
 
 ## B4. Authors in the target journals, 2024 to 2026
 
-Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. {n_diff_years:,} merged papers (counted over all their raw records, in both corpora) have records with differing years{yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
+Method: the target journals are the four journals chosen for this list (from the outreach plan): {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. {n_diff_years:,} merged papers (counted over all their raw records, in both corpora) have records with differing years{yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
 Source names that contain a target name but are not an exact match, and so were not used (papers in range): {near_txt}.
 
@@ -489,6 +514,12 @@ Why some rows are small or empty. The zero rows are explained by the records in 
 
 {t4}
 
+## Ties
+
+A full tie means every sort key before the author id is equal. Where a tie crosses the end of a 15 row table or the cut at 30, the rows beyond the cut have the same keys as the last row shown. The B3 table prints the whole tie at rank 15; the other tables stop at rank 15, and the CSV files hold the full lists (B1 and B3 hold the top 30).
+
+{tietab}
+
 ## Work types
 
 No list filters by work type. Errata, editorials and other non article records count as papers like any other. The type is OpenAlex's type for the merged paper's most cited record. Counts of papers that are not of type article, for the papers behind each list:
@@ -501,7 +532,7 @@ No list filters by work type. Errata, editorials and other non article records c
 - {st['without author id']:,} of {st['authorships']:,} authorships have no author id and are not counted.
 - The corpora are keyword searches, not the whole literature. {len(P):,} polycrisis papers and {len(L):,} LtG papers say nothing about authors who write on these topics under other terms. Counts describe the corpora only.
 - B3 is built from polycrisis papers only. Coauthor links that exist only through LtG papers are not in the network. Papers with long author lists add many edges, and the primary list applies no cap; the sensitivity table shows the effect of a cap of {SENS_MAX_AUTHORS}.
-- Ties are common in B1 and B3 (see the tie counts above). The order inside a tie comes from the author id, which carries no meaning.
+- Ties are common in every list. The order inside a full tie comes from the author id, which carries no meaning. See the Ties section.
 - Institution names come from OpenAlex affiliation matching and are not checked. Each list shows every institution seen on the papers described under Basis of the figures. Treat them as unverified.
 - B2 depends on the {len(both_units):,} papers that are in both corpora, as described above.
 - The script needs `data/canon_metadata_cache.json` and the raw files. `data/` is gitignored, so a clean clone must rebuild them (scripts 01 to 06) before this script can run.
