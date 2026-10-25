@@ -67,7 +67,7 @@ def short(x):
 
 
 def merged_papers():
-    """Merged units exactly as 06 builds them. Returns (unit meta, corpus membership of units, gmap, number of merged groups, number of raw records)."""
+    """Merged units exactly as 06 builds them. Returns (unit meta, corpus membership of units, gmap, number of merged groups, set of CSV record ids)."""
     raw_meta, raw_members, raw_refs, _, _ = b06.load()
     ucount = Counter()
     pc = b06.ref_counts(raw_members["polycrisis"], raw_refs)
@@ -82,10 +82,10 @@ def merged_papers():
                          "Run scripts/06_citation_bridge.py once with network access to fill it. 08 never calls OpenAlex.")
     gmap, comps, _ = b06.build_gmap(raw_meta, b06.resolve_titles(pool), ucount)
     meta, members, _ = b06.make_context(raw_meta, raw_members, raw_refs, gmap)
-    return meta, members, gmap, len(comps), len(raw_meta)
+    return meta, members, gmap, len(comps), set(raw_meta.index)
 
 
-def load_authorships(gmap):
+def load_authorships(gmap, csv_ids):
     """Per merged unit: {author id: {names, institutions}} plus sources and counts of lost authorships."""
     unit_auth = defaultdict(dict)       # unit -> author id -> {"names": Counter, "inst": Counter}
     unit_src = defaultdict(set)         # unit -> source display names
@@ -118,6 +118,8 @@ def load_authorships(gmap):
                 for i in a.get("institutions") or []:
                     if i.get("display_name"):
                         d["inst"][i["display_name"]] += 1
+    stats["distinct"] = len(seen_rec)
+    assert seen_rec == set(csv_ids), "record ids in the raw JSON files differ from the ids in the corpus CSV files"
     return unit_auth, unit_src, stats, rec_info
 
 
@@ -175,8 +177,9 @@ def pl(n, one, many):
 
 
 def main():
-    meta, members, gmap, n_groups, n_raw = merged_papers()
-    unit_auth, unit_src, st, rec_info = load_authorships(gmap)
+    meta, members, gmap, n_groups, csv_ids = merged_papers()
+    unit_auth, unit_src, st, rec_info = load_authorships(gmap, csv_ids)
+    n_raw = st["distinct"]          # distinct record ids counted from the raw JSON; equal to the CSV ids (asserted)
     P, L = members["polycrisis"], members["ltg"]
     both_units = P & L
     print(f"Raw file entries: {st['entries']}; distinct record ids: {n_raw}; extra entries from repeated ids: {st['entries'] - n_raw}")
@@ -347,16 +350,14 @@ def main():
         idx = [i for i, a in enumerate(order) if keyf(a) == k]
         return len(idx), idx[0] + 1, idx[-1] + 1
     tie_rows = []
+    r2 = {r[0]: r for r in rows2}
     specs = [
         ("B1", "papers, then total citations, then author id", b1, lambda a: (len(tabP[a]["papers"]), tabP[a]["cites"])),
-        ("B2", "smaller of the two corpus counts, then total papers, then total citations, then author id", [r[0] for r in rows2], None),
+        ("B2", "smaller of the two corpus counts, then total papers, then total citations, then author id", [r[0] for r in rows2], lambda a: (r2[a][3], r2[a][4], r2[a][5])),
         ("B3", f"betweenness rounded to {BTW_DECIMALS} decimals, then degree, then author id", b3_all, tie_key),
         ("B4", "papers in the target journals, then total citations, then author id", b4, lambda a: (len(tab4[a]["papers"]), tab4[a]["cites"])),
     ]
-    r2 = {r[0]: r for r in rows2}
     for nm, seq, order, kf in specs:
-        if nm == "B2":
-            kf = lambda a: (r2[a][3], r2[a][4], r2[a][5])
         cells = []
         for pos in (TABLE_N, TOP_N):
             if pos > len(order):
@@ -415,27 +416,26 @@ def main():
         print(f"B4 {s}: merged papers by year {yrs}; authors {len({a for a in tab4 if s in jr[a]})}")
         jr_rows.append([s, "matched" if pap4[s] else "no match", len(pap4[s]), len(
             {a for a in tab4 if s in jr[a]})] + [yrs[y] for y in range(YEAR_MIN, YEAR_MAX + 1)])
-    # Source-name matching uses primary_location of every raw record of a merged paper.
     def yr_txt(ys):
         return ", ".join(str(y) for y in ys) if ys else "none"
     wtab = md_table(["Source display name", "Raw records with this name", "Outside the window (years)", "In window with no authorships (year, type)"],
                     [[sname, why[sname][0], yr_txt(why[sname][1]),
                       (", ".join(f"{y}, {t}" for y, t in why[sname][2]) if why[sname][2] else "none")] for sname in TARGET_JOURNALS])
     b3_rows = b3_all[:max(TABLE_N, tie_last + 1)]
-    t1 = md_table(["Rank", "OpenAlex author id", "Name", "Papers", "Total citations", "Latest year", "Institutions seen (up to 3)"],
+    t1 = md_table(["Rank", "OpenAlex author id", "Name", "Papers", "Total citations", "Latest year", f"Institutions seen (up to {INST_SHOWN})"],
                   [[i + 1, a, name_of(tabP[a]), len(tabP[a]["papers"]), tabP[a]["cites"], tabP[a]["year"], short_inst(tabP[a])]
                    for i, a in enumerate(b1_top[:TABLE_N])])
-    t2 = md_table(["Rank", "OpenAlex author id", "Name", "Polycrisis papers", "LtG papers", "Min", "Polycrisis without shared papers", "LtG without shared papers", "Total citations", "Bridge papers (06)", "Institutions seen (up to 3)"],
+    t2 = md_table(["Rank", "OpenAlex author id", "Name", "Polycrisis papers", "LtG papers", "Min", "Polycrisis without shared papers", "LtG without shared papers", "Total citations", "Bridge papers (06)", f"Institutions seen (up to {INST_SHOWN})"],
                   [[i + 1, r[0], name_of(tabAll[r[0]]), r[1], r[2], r[3], r[7], r[8], r[5], (", ".join(r[6]) if r[6] else "none"), short_inst(tabAll[r[0]])]
                    for i, r in enumerate(rows2[:TABLE_N])])
     bcol = "Betweenness"
-    t3 = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "Other authors tied with this row", "Polycrisis papers", "Institutions seen (up to 3)"],
+    t3 = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "Other authors tied with this row", "Polycrisis papers", f"Institutions seen (up to {INST_SHOWN})"],
                   [[i + 1, a, name_of(tabP[a]), deg[a], f"{btw[a]:.8f}", other_tied(a), len(tabP[a]["papers"]), short_inst(tabP[a])]
                    for i, a in enumerate(b3_rows)])
-    t3s = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "In primary top 30"],
+    t3s = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, f"In primary top {TOP_N}"],
                    [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.8f}", "yes" if a in b3 else "no"]
                     for i, a in enumerate(sens_top[:TABLE_N])])
-    t4 = md_table(["Rank", "OpenAlex author id", "Name", "Target journal papers", "Total citations", "Journals", "In polycrisis", "In LtG", "Institutions seen (up to 3)"],
+    t4 = md_table(["Rank", "OpenAlex author id", "Name", "Target journal papers", "Total citations", "Journals", "In polycrisis", "In LtG", f"Institutions seen (up to {INST_SHOWN})"],
                   [[i + 1, a, name_of(tab4[a]), len(tab4[a]["papers"]), tab4[a]["cites"], ", ".join(jr[a]),
                     "yes" if a in tabP else "no", "yes" if a in tabL else "no", short_inst(tab4[a])]
                    for i, a in enumerate(b4[:TABLE_N])])
@@ -485,7 +485,7 @@ Effect of the shared papers: only {len(both_units):,} merged papers are in both 
 
 ## B3. Central authors in the polycrisis coauthor network
 
-Method: {b3_method} Betweenness is rounded to {BTW_DECIMALS} decimals before ranking, so authors whose values differ by less than that count as tied and are then ordered by degree and author id.
+Method: {b3_method} Betweenness is rounded to {BTW_DECIMALS} decimals before ranking; values equal after rounding count as tied and are then ordered by degree and author id.
 
 Counts: {pl(overlap_b1_b3, 'author is', 'authors are')} in both the B1 and B3 lists. {pl(len(tie15_rows), 'author has', 'authors have')} the same degree and rounded betweenness as rank {TABLE_N}, at ranks {tie15_rows[0] + 1} to {tie_last + 1}; the table shows all of them, ordered only by author id. {pl(tie_cut, 'other author is', 'other authors are')} tied with rank {TOP_N}. Of the top {TOP_N}, {n_big_top:,} authors are coauthors on the {pl(len(big), 'paper', 'papers')} with the longest author list ({max_auth:,} author ids each): {', '.join(big)}. File: `data/outreach_B3.csv`.
 
@@ -513,7 +513,7 @@ Why some rows are small or empty. The raw files hold only the primary location o
 
 ## Ties
 
-A full tie means every sort key before the author id is equal. Where a tie crosses the end of a 15 row table or the cut at 30, the rows beyond the cut have the same keys as the last row shown. The B3 table prints the whole tie at rank 15; the other tables stop at rank 15, and the CSV files hold the full lists (B1 and B3 hold the top 30).
+A full tie means every sort key before the author id is equal. Where a tie crosses the end of a {TABLE_N} row table or the cut at {TOP_N}, the rows beyond the cut have the same keys as the last row shown. The B3 table prints the whole tie at rank 15; the other tables stop at rank 15, and the CSV files hold the full lists (B1 and B3 hold the top 30).
 
 {tietab}
 
@@ -530,7 +530,7 @@ No list filters by work type. Errata, editorials and other non article records c
 - The corpora are keyword searches, not the whole literature. {len(P):,} polycrisis papers and {len(L):,} LtG papers say nothing about authors who write on these topics under other terms. Counts describe the corpora only.
 - B3 is built from polycrisis papers only. Coauthor links that exist only through LtG papers are not in the network. Papers with long author lists add many edges, and the primary list applies no cap; the sensitivity table shows the effect of a cap of {SENS_MAX_AUTHORS}.
 - Ties are common in every list. The order inside a full tie comes from the author id, which carries no meaning. See the Ties section.
-- Institution names come from OpenAlex affiliation matching and are not checked. The note tables show up to 3 institutions per author and the CSV files list all of those seen, on the papers described under Basis of the figures. Treat them as unverified.
+- Institution names come from OpenAlex affiliation matching and are not checked. The note tables show up to {INST_SHOWN} institutions per author and the CSV files list all of those seen, on the papers described under Basis of the figures. Treat them as unverified.
 - B2 depends on the {len(both_units):,} papers that are in both corpora, as described above.
 - The script needs these files in `data/`: polycrisis_papers_raw.json, ltg_refined_papers_raw.json, polycrisis_papers.csv, ltg_refined_papers.csv, references_refetch_2026-10-24.json and canon_metadata_cache.json (bridge_papers.csv is optional). `data/` is gitignored, so a clean clone must rebuild them (scripts 01 to 06) before this script can run.
 - B4 uses the primary location only. A paper listed under another source name is not matched. Journal names were matched exactly as written, so renamed or abbreviated forms are missed.
