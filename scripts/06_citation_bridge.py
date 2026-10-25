@@ -32,7 +32,7 @@ Output:
     figures/bridge_papers_by_year.png
     docs/RESULTS_citation_bridge.md
 Network: one batched call group to api.openalex.org on the first run only, for titles, years and
-types of all pool works (works cited by at least 3 corpus papers; the count is printed and given in
+types of all pool works (works cited by at least 3 papers within one corpus; the count is printed and given in
 the note). Later runs read data/canon_metadata_cache.json.
 No email or mailto is sent.
 """
@@ -875,7 +875,7 @@ def main():
     md.append("\nWithin corpus null for the variant that keeps the shared canon in both canons:\n")
     md.append(md_table(["N", "Min refs to each canon", "Observed bridge papers", "Within corpus null mean", "5th percentile", "95th percentile", "Maximum"],
                        [(n, m, obs, f"{mu:.1f}", f"{lo:.0f}", f"{hi:.0f}", mx) for n, m, obs, mu, lo, hi, mx in null_keep]))
-    md.append("\nBoth nulls remove topic structure, and weighted draws favour heavily cited works, so papers with long reference lists hit both canons more often in the null.\n")
+    md.append("\nBoth nulls remove topic structure.\n")
     cited_tie_txt = []
     for n in SENS_NS:
         cc = canons[("cited", n)]
@@ -939,16 +939,16 @@ def main():
     md.append(
         f"* **Reference coverage.** Only {len(with_refs)} of {len(all_ids)} papers after merging ({pct(len(with_refs), len(all_ids))}) have any reference list in OpenAlex. "
         "The bridge share is computed only over those. Papers without a list cannot be tested here, and nothing is claimed about them.\n"
-        f"* **OpenAlex reference completeness.** The saved and refetched reference lists are different sets for {list_stats['different (neither contains the other)']} papers and one is a strict subset of the other for {list_stats['refetched shorter (subset of saved)'] + list_stats['refetched longer (superset of saved)']} more, so the lists are not fixed. Coverage differs by document type, which means the tested papers are not a random sample. "
+        f"* **OpenAlex reference completeness.** The saved and refetched reference lists are different sets for {list_stats['different (neither contains the other)']} papers and one is a strict subset of the other for {list_stats['refetched shorter (subset of saved)'] + list_stats['refetched longer (superset of saved)']} more. Coverage differs by document type. "
         f"By type (papers with a reference list out of all papers; the {min(6, len(tcov))} most common of {len(tcov)} types): " + "; ".join(f"`{t}` {k} of {n}" for t, n, k in tcov[:6]) + ".\n"
         "* **Books and chapters.** Types of the " + str(len(canon_ids)) + " canon works in the two top lists before shared removal: "
         + "; ".join(f"`{t}` {c}" for t, c in canon_types) + ". "
         "A book cited by a paper counts like any other work. " + books_chap_text + "\n"
         "* **Corpus query scope.** The corpora come from keyword searches, so the polycrisis corpus holds papers that use that word and the LtG corpus holds papers that matched the refined query. "
         "Canon_P and Canon_L describe what these two retrieved sets cite, not every paper in either field. The LtG refined filter in `scripts/01b_fetch_ltg_refined.py` keeps any paper whose text contains a strong marker, including polycrisis and degrowth. " + ltg_year_text + "\n"
-        f"* **Circularity.** The canon is derived from the same corpus it is then tested on, so papers in the corpus are by construction likely to cite works that are frequent in the corpus. A bridge here means citing the corpus's own frequent works from each side, not citing an outside list of founding texts. {len(canon_is_bridge)} of the {_pl(len(bdf), 'bridge paper', 'bridge papers')} {'is itself a canon work' if len(canon_is_bridge) == 1 else 'are themselves canon works'}.\n"
+        f"* **Circularity.** The canon is derived from the same corpus it is then tested on. A bridge here means citing the corpus's own frequent works from each side, not citing an outside list of founding texts. {len(canon_is_bridge)} of the {_pl(len(bdf), 'bridge paper', 'bridge papers')} {'is itself a canon work' if len(canon_is_bridge) == 1 else 'are themselves canon works'}.\n"
         f"* **Low bridge bar.** The main definition needs only one reference on each side. Requiring at least 2 on each side gives {two50} bridge papers at N = {PRIMARY_N} instead of {one50} with merged records ({two50_0} instead of {len(bridges0)} unmerged).\n"
-        "* **Baseline.** The only baseline is the random reference draw above, which ignores topic. There is no comparison with a different pair of fields, so the bridge counts say how often both canons are cited, not whether that is more than usual for two related fields.\n"
+        "* **Baseline.** The baselines are the two random reference draws above, which ignore topic within each field. There is no comparison with a different pair of fields, so the bridge counts say how often both canons are cited, not whether that is more than usual for two related fields.\n"
         f"* **Unresolved titles.** {n_pool_untitled} of the {len(pool_ids)} works checked for duplicate records have no resolved title, so they cannot be merged.\n"
         f"* **Duplicate records.** Merging uses titles (and first author for papers) and was only run on works cited by at least {MIN_POOL_COUNT} papers within one corpus, so duplicates of less cited works are not merged, and different works with identical titles could be merged by mistake. The merged groups among the canon are listed above.\n"
         "* **Canon definition.** A canon built from counts depends on corpus size and composition. A paper in both corpora counts toward both counts. Sensitivity runs above show how much the answer moves with N and with the variant.\n"

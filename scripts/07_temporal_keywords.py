@@ -11,9 +11,10 @@ What this does:
     keyword vectors. Also lists which keywords newly enter each top 50.
 
     Keyword source and cleaning are the same as the "21 of the top 50"
-    headline in 05_simple_viz.py, except for one deliberate change: repeated
-    OpenAlex ids in the paper CSVs are kept once (the script computes and
-    prints how many term counts this changes against 05's saved files). The `keywords` plus `concepts` columns of
+    headline in 05_simple_viz.py, except for the differences listed in the
+    consistency check of the results note (repeated OpenAlex ids kept once,
+    empty keyword cells treated as empty, and a different tie rule; the script
+    prints how many term counts the id change affects). The `keywords` plus `concepts` columns of
     the paper CSVs (as in 02_bibliometric_analysis.py: lowercase, longer than
     2 characters, one count per paper), then 05's STOPWORDS and its rule that
     drops terms containing "(". The full period number is recomputed first as
@@ -525,7 +526,7 @@ def main():
     md.append("## Question\n\nIs the vocabulary of the polycrisis literature and the Limits to Growth (LtG) literature converging over time?\n")
     md.append("## Method\n")
     md.append(
-        f"* **Keyword source.** The same as the {ov05} of {TOP_N} headline in `scripts/05_simple_viz.py`, except that repeated OpenAlex ids are kept once (counts differ from 05's saved counts for {cmm[TOP_N]['deduped polycrisis']} polycrisis and {cmm[TOP_N]['deduped ltg']} LtG terms in the saved top {TOP_N}, see the consistency check): the `keywords` and `concepts` columns of "
+        f"* **Keyword source.** The same as the {ov05} of {TOP_N} headline in `scripts/05_simple_viz.py`, except for the differences listed in the consistency check below: repeated OpenAlex ids are kept once (counts differ from 05's saved counts for {cmm[TOP_N]['deduped polycrisis']} polycrisis and {cmm[TOP_N]['deduped ltg']} LtG terms in the saved top {TOP_N}, see the consistency check): the `keywords` and `concepts` columns of "
         "`data/polycrisis_papers.csv` and `data/ltg_refined_papers.csv`, lowercased, longer than 2 characters, counted once per paper, "
         "then the stopword list and the drop of any term containing a bracket from 05. These are the OpenAlex keyword and concept tags saved in the CSVs, not author keywords. A paper has a usable term if at least one term is left after the length rule, the stopword list and the bracket rule; papers with no usable term are left out of every measure. "
         f"Papers with no usable term: {n_nou_p} of {len(poly)} polycrisis and {n_nou_l} of {len(ltg)} LtG, of which {n_empty_p} and {n_empty_l} have empty keyword and concept cells (the rest lose all their terms to the cleaning rules).\n"
@@ -572,7 +573,7 @@ def main():
     md.append("### Size matched control\n")
     md.append(md_table(["Period", "Observed overlap (random ties)", "Size matched mean", "Size matched 5th to 95th", "Gap (observed minus matched)", "Papers per corpus in control"], ctrl_rows))
     if len(oref):
-        md.append(f"\nSingle years for reference only, not used for the main reading (LtG papers with a usable term used: {', '.join(str(int(r.n_ltg)) + ' in ' + r.period for r in oref.itertuples())}, under 50, so treat as indicative only):\n")
+        md.append(f"\nSingle years for reference only, not used for the main reading (LtG papers with a usable term used: {', '.join(str(int(r.n_ltg)) + ' in ' + r.period for r in oref.itertuples())}, under 50):\n")
         md.append(md_table(["Period", "Polycrisis used", "LtG used", "Overlap, random ties: mean (5th to 95th)", "Overlap, strict set", "Weighted Jaccard", "Cosine", "Size matched mean"],
                            [(r.period, r.n_polycrisis, r.n_ltg, f"{r.overlap_random_mean:.1f} ({r.overlap_random_p5:.0f} to {r.overlap_random_p95:.0f})", r.overlap_strict,
                              f"{r.weighted_jaccard_share:.3f}", f"{r.cosine_per_paper:.3f}", f"{r.matched_overlap_mean:.1f} (n = {int(r.matched_n_per_corpus)} per corpus)") for r in oref.itertuples()]))
@@ -612,7 +613,7 @@ def main():
     md.append(f"The first period has {int(first.n_polycrisis)} polycrisis papers and its tie robust overlap range is {odf.overlap_random_p5.iloc[0]:.0f} to {odf.overlap_random_p95.iloc[0]:.0f}. "
               f"The LtG side is small in the later periods: " + " and ".join(f"{r.n_ltg} papers with a usable term in {r.period}" for r in odf.itertuples() if r.n_ltg < 100) + ", "
               f"compared with {int(odf.n_ltg.iloc[0])} in {odf.period.iloc[0]}. The LtG 2023 to 2026 slice is {int(odf.n_ltg.iloc[1:].sum())} papers with a usable term, "
-              f"which is {100 * odf.n_ltg.iloc[1:].sum() / odf.n_ltg.iloc[0]:.1f}% of the earlier LtG bin. This is the main confound when comparing periods, because the size matched ranges show how far a {CONTROL_N} paper sample moves the overlap. "
+              f"which is {100 * odf.n_ltg.iloc[1:].sum() / odf.n_ltg.iloc[0]:.1f}% of the earlier LtG bin."
               f"The widest tie robust 5th to 95th range in any period is {int((odf.overlap_random_p95 - odf.overlap_random_p5).max())} keywords and the widest size matched range is {int((odf.matched_overlap_p95 - odf.matched_overlap_p5).max())}. "
               f"The duplicate record merge also moves the last period: {mrg_last:.1f} instead of {rm[-1]:.1f} ({mrg_last - rm[-1]:+.1f}) in {odf.period.iloc[-1]}, so that period is sensitive to the record rule.\n")
     md.append("## Limitations\n")
@@ -627,7 +628,7 @@ def main():
         f"* **Small early bins.** Polycrisis papers: {int((poly.year <= 2019).sum())} up to 2019 and {int((poly.year <= 2022).sum())} up to 2022, out of {len(poly)}, so the earliest polycrisis period is small and merged. "
         f"The first period holds {int(odf.n_ltg_all.iloc[0])} LtG papers published {int(ltg.year[ltg.year <= 2022].min())} to 2022 (median year {ltg.year[ltg.year <= 2022].median():.1f}; {100 * (ltg.year[ltg.year <= 2022] < 2000).mean():.1f}% before 2000), so it mixes many years.\n"
         "* **Unequal sizes.** The two corpora differ in size within each period (see the papers per period table). The size matched control gives a like for like series across periods but does not correct the observed numbers.\n"
-        f"* **Ties.** The most terms left out at the cutoff in any of the three main periods is {int(max((odf.tied_polycrisis - odf.slots_polycrisis).max(), (odf.tied_ltg - odf.slots_ltg).max()))}, and across the main periods and the single year rows it is {int(max((pd.concat([odf, oref]).tied_polycrisis - pd.concat([odf, oref]).slots_polycrisis).max(), (pd.concat([odf, oref]).tied_ltg - pd.concat([odf, oref]).slots_ltg).max()))} (see the tie table for the main periods), so the alphabetical top 50 overlap is a single draw from a range. Readings here use the random tie breaking range.\n"
+        f"* **Ties.** The most terms left out at the cutoff in any of the three main periods is {int(max((odf.tied_polycrisis - odf.slots_polycrisis).max(), (odf.tied_ltg - odf.slots_ltg).max()))}, and across the main periods and the single year rows it is {int(max((pd.concat([odf, oref]).tied_polycrisis - pd.concat([odf, oref]).slots_polycrisis).max(), (pd.concat([odf, oref]).tied_ltg - pd.concat([odf, oref]).slots_ltg).max()))} (see the tie table for the main periods). Readings here use the random tie breaking range.\n"
         f"* **Corpus scope.** The corpora are the results of keyword queries, so overlap between them describes these retrieved sets, not the whole of either field. {n_both} papers are in both corpora.\n"
         f"* **Truncated tag lists.** Checked against the raw API records ({n_raw_papers} papers): {n_kw_cut} have more than 10 OpenAlex keywords (the most is {n_kw_max}), and the fetch script keeps only the first 10 in the CSV, so those papers lose tags. "
         f"The fetch script also keeps only the 5 highest scoring concepts; {n_co_cut} raw records have more than 5 concepts.\n"
