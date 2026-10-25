@@ -72,7 +72,8 @@ def short_id(x):
 # ── Load ──────────────────────────────────────────────────────────────────────
 
 def load():
-    """Return meta (DataFrame by id), corpus membership sets, union refs dict, old rule refs dict, list difference counts."""
+    """Return (meta DataFrame by id, corpus membership sets, union refs dict, a dict of three alternative
+    reference list rules keyed by name, Counter of saved versus refetched list comparison counts)."""
     frames, members = [], {}
     for name, csv in [("polycrisis", "polycrisis_papers.csv"), ("ltg", "ltg_refined_papers.csv")]:
         df = pd.read_csv(DATA_DIR / csv)
@@ -262,7 +263,7 @@ def build_gmap(raw_meta, pool_info, ucount):
     for wid, row in raw_meta.iterrows():
         sn_set[wid] = {first_surname(row["authors"]) or "?" + wid}
 
-    def union(a, b, rule="", label=""):
+    def union(a, b):
         ra, rb = find(a), find(b)
         if ra == rb:
             return True
@@ -283,7 +284,7 @@ def build_gmap(raw_meta, pool_info, ucount):
             keyp[(nt, sn)].append(wid)
     for ids in keyp.values():
         for other in ids[1:]:
-            union(ids[0], other, "paper title and first author")
+            union(ids[0], other)
             rule_of[other].add("paper title and first author")
             rule_of[ids[0]].add("paper title and first author")
     # (b) cited works: same normalised full title
@@ -301,7 +302,7 @@ def build_gmap(raw_meta, pool_info, ucount):
     for nt_, ids in sorted(keyw.items()):
         for j, other in enumerate(ids):
             for first in ids[:j]:
-                if union(first, other, "same normalised title", nt_):
+                if union(first, other):
                     rule_of[other].add("same normalised title")
                     rule_of[first].add("same normalised title")
     # (c) a bare title equal to the part before the colon of longer titles joins the most cited such group
@@ -312,7 +313,7 @@ def build_gmap(raw_meta, pool_info, ucount):
                 done = False
                 for a_ in ids:
                     for b_ in keyw[cands[0]]:
-                        if union(a_, b_, "bare title", nt):
+                        if union(a_, b_):
                             rule_of[a_].add(f"bare title joined the group cited by the most corpus papers, of {len(cands)} longer title {'group' if len(cands) == 1 else 'groups'}")
                             rule_of[b_].add(f"bare title joined the group cited by the most corpus papers, of {len(cands)} longer title {'group' if len(cands) == 1 else 'groups'}")
                             done = True
@@ -499,6 +500,8 @@ def main():
     for w in set(pcount) | set(lcount):
         ucount[w] = pcount[w] + lcount[w]
     pool_ids = sorted({w for w in set(pcount) | set(lcount) if pcount[w] >= MIN_POOL_COUNT or lcount[w] >= MIN_POOL_COUNT})
+    n_total3_outside_pool = sum(1 for w in ucount if ucount[w] >= MIN_POOL_COUNT and w not in set(pool_ids))
+    print(f"Works cited {MIN_POOL_COUNT}+ times in total but under {MIN_POOL_COUNT} in each corpus (not checked for duplicates): {n_total3_outside_pool}")
     print(f"Works cited by at least {MIN_POOL_COUNT} papers in either corpus (checked for duplicate records): {len(pool_ids)}")
     pool_info = resolve_titles(pool_ids)
     gmap, comps, rules = build_gmap(raw_meta, pool_info, ucount)
@@ -745,7 +748,6 @@ def main():
     plt.close(fig)
 
     # ── Results note ──────────────────────────────────────────────────────────
-    top15 = bdf.head(15)
     cut15 = int(bdf.cited_by_count.iloc[min(14, len(bdf) - 1)])
     top15 = bdf[bdf.cited_by_count >= cut15]       # includes every row tied with the 15th row
     n_tied15 = int((bdf.cited_by_count == cut15).sum())
@@ -802,7 +804,7 @@ def main():
         "(the refined pull, not the noisy `ltg_papers.csv`). Papers are deduplicated by OpenAlex id across corpora.\n"
         "* **Reference list.** The union of the refetched list and the list saved in the original raw file. Both are OpenAlex records of the same work's references, and the two differ for some papers (see Reference coverage).\n"
         f"* **Record merge (primary).** OpenAlex often holds several records of the same work, so records are merged before anything is counted. (a) Corpus papers are merged by normalised title plus first author surname; a paper with no first author on record is never merged, and two corpus papers with different first authors are never merged. "
-        f"(b) Cited works in the pool, meaning works cited by at least {MIN_POOL_COUNT} corpus papers in either corpus ({len(pool_ids)} works), are merged by normalised title, plus one further rule for a title equal to the part before the colon of longer titles. "
+        f"(b) Cited works in the pool, meaning works cited by at least {MIN_POOL_COUNT} papers within one corpus, polycrisis or LtG ({len(pool_ids)} works; a further {n_total3_outside_pool} works cited {MIN_POOL_COUNT} or more times across both corpora together but under {MIN_POOL_COUNT} within each are not checked), are merged by normalised title, plus one further rule for a title equal to the part before the colon of longer titles. "
         "(c) A merged group counts as one work when it is cited and as one paper when it is tested, with the union of its members' reference lists. A merged cited work is shown with the earliest year and the type of its earliest record, and a merged corpus paper takes the year, cited_by_count, type, title and id of its most cited member record. "
         "The exact rules are `build_gmap` in `scripts/06_citation_bridge.py`. Results are shown with merged records (primary) and with unmerged records.\n"
         f"* **Canon (primary).** For each corpus, count how many of its papers cite each work. Canon_P is the top {PRIMARY_N} works "
@@ -948,7 +950,7 @@ def main():
         f"* **Low bridge bar.** The main definition needs only one reference on each side. Requiring at least 2 on each side gives {two50} bridge papers at N = {PRIMARY_N} instead of {one50} with merged records ({two50_0} instead of {len(bridges0)} unmerged).\n"
         "* **Baseline.** The only baseline is the random reference draw above, which ignores topic. There is no comparison with a different pair of fields, so the bridge counts say how often both canons are cited, not whether that is more than usual for two related fields.\n"
         f"* **Unresolved titles.** {n_pool_untitled} of the {len(pool_ids)} works checked for duplicate records have no resolved title, so they cannot be merged.\n"
-        f"* **Duplicate records.** Merging uses titles (and first author for papers) and was only run on works cited by at least {MIN_POOL_COUNT} corpus papers, so duplicates of less cited works are not merged, and different works with identical titles could be merged by mistake. The merged groups among the canon are listed above.\n"
+        f"* **Duplicate records.** Merging uses titles (and first author for papers) and was only run on works cited by at least {MIN_POOL_COUNT} papers within one corpus, so duplicates of less cited works are not merged, and different works with identical titles could be merged by mistake. The merged groups among the canon are listed above.\n"
         "* **Canon definition.** A canon built from counts depends on corpus size and composition. A paper in both corpora counts toward both counts. Sensitivity runs above show how much the answer moves with N and with the variant.\n"
         f"* **Refetch gaps.** 06a asked OpenAlex for every id; {n_not_refetched} of {len(all0)} ids returned no record, and for those the saved list was used. "
         f"Titles could not be resolved for {n_title_missing} of {len(canon_ids)} canon works.\n"

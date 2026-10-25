@@ -195,8 +195,8 @@ def count_terms(papers):
 
 
 def tie_robust(papers_p, papers_l, rng, draws):
-    """Overlap of the two top N lists under three tie rules: strict (only terms above
-    the cutoff count), alphabetical, and random tie breaking (mean and 5th to 95th percentile)."""
+    """Overlap of the two top N lists under two tie rules: strict (only terms above the cutoff
+    count) and random tie breaking (mean and 5th to 95th percentile over the given number of draws)."""
     pp, pl = tie_parts(count_terms(papers_p)), tie_parts(count_terms(papers_l))
     strict = len(pp[1] & pl[1])
     ov = [len(random_top_set(pp, rng) & random_top_set(pl, rng)) for _ in range(draws)]
@@ -545,7 +545,7 @@ def main():
         "02 also stores empty keyword cells as the text nan, which 05 drops by accident and this script treats as empty.\n"
         f"* **Periods.** Chosen after seeing the year counts, so every period has about 50 or more papers in both corpora (the script stops if a period has fewer than {MIN_PAPERS}). "
         f"Papers without a year ({int(poly['year'].isna().sum())} polycrisis, {int(ltg['year'].isna().sum())} LtG) are not placed in any period.\n"
-        f"* **Measures per period.** Top {TOP_N} overlap is reported three ways: with alphabetical tie breaking (this script's tie rule; 05 breaks ties by first seen order, so the full period count of {ov_full} matches 05's {ov05} only as a count, and the top 50 sets differ by {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms per side; shown for comparison only), with the strict set (only terms whose count is above the cutoff count), "
+        f"* **Measures per period.** Top {TOP_N} overlap is reported three ways: with alphabetical tie breaking (this script's tie rule; the full period count of {ov_full} matches 05's {ov05} only as a count, and the top 50 sets differ by {len(tp_full - r05p)} polycrisis and {len(tl_full - r05l)} LtG terms per side; shown for comparison only), with the strict set (only terms whose count is above the cutoff count), "
         f"and with random tie breaking ({TIE_DRAWS} seeded draws, mean and 5th to 95th percentile). Readings use the random tie breaking numbers. "
         "Weighted Jaccard uses all keywords by share of papers (sum of the smaller share divided by sum of the larger share), and cosine similarity uses keyword vectors in which each paper adds a total weight of 1 spread over its keywords; neither depends on a top 50 cutoff.\n"
         f"* **Size matched control.** Because the corpora differ in size, the script also draws, without replacement, the smaller of {CONTROL_N} and the papers with a usable term available from each corpus in each row ({N_SUBSAMPLES} draws) and measures the top {TOP_N} overlap with random tie breaking. {CONTROL_N} is below the smallest main period corpus ({int(min(odf.n_polycrisis.min(), odf.n_ltg.min()))} papers). Seed {SEED}.\n"
