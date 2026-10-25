@@ -95,6 +95,7 @@ def load_authorships(gmap):
             src = ((w.get("primary_location") or {}).get("source") or {}).get("display_name")
             if src:
                 unit_src[u].add(src)
+            if True:
                 rec_info.append((src, u, wid, w.get("publication_year"), w.get("type"), len(w.get("authorships") or [])))
             if wid in seen_rec:
                 continue                # same record in both files: authorships counted once
@@ -298,6 +299,11 @@ def main():
         sens_rank = sorted(nodes, key=lambda a: (-sdeg[a], a))
     sens_top = sens_rank[:TOP_N]
     sens_overlap = len(set(sens_top) & set(b3))
+    skey = (lambda a: (round(sb[a], BTW_DECIMALS), sdeg[a])) if nx else (lambda a: sdeg[a])
+    s_last = skey(sens_rank[TOP_N - 1])
+    s_tied_pos = [i for i, a in enumerate(sens_rank) if skey(a) == s_last]
+    s_tie_other = len(s_tied_pos) - 1
+    print(f"B3 sensitivity: other authors tied with rank {TOP_N}: {s_tie_other}, occupying ranks {s_tied_pos[0] + 1} to {s_tied_pos[-1] + 1}")
     print(f"B3 sensitivity: papers with more than {SENS_MAX_AUTHORS} author ids left out: {n_excl}; edges {len(sedges)}; overlap with primary top {TOP_N}: {sens_overlap}")
     print(f"B3: largest author list on one merged polycrisis paper: {max_auth}")
     write_csv(DATA_DIR / "outreach_B3.csv",
@@ -337,6 +343,24 @@ def main():
     print(f"B4: papers {len(b4_units)}; authors {len(tab4)}; per journal {{{', '.join(f'{s}: {len(pap4[s])}' for s in TARGET_JOURNALS)}}}")
     print(f"B4: near miss source names (contain a target name, not an exact match): {dict(near)}")
 
+    def type_counts(units):
+        c = Counter(str(meta.loc[u, "type"]) for u in units)
+        non = sum(v for k, v in c.items() if k != "article")
+        return non, len(units), c
+    type_lists = [
+        ("All merged papers in either corpus", P | L),
+        ("Papers of the B1 authors", set().union(*[set(tabP[a]["papers"]) for a in b1_top])),
+        ("Papers of the B2 authors", set().union(*[set(tabAll[r[0]]["papers"]) for r in rows2])),
+        ("Papers of the B3 authors", set().union(*[set(tabP[a]["papers"]) for a in b3])),
+        ("Papers in B4", b4_units),
+    ]
+    type_rows = []
+    for lab, us in type_lists:
+        non, tot, c = type_counts(us)
+        brk = ", ".join(f"{k} {v}" for k, v in sorted(c.items(), key=lambda kv: (-kv[1], kv[0])) if k != "article")
+        type_rows.append([lab, tot, non, brk if brk else "none"])
+        print(f"Types: {lab}: {tot} papers, {non} not of type article ({brk if brk else 'none'})")
+    ttab = md_table(["Set of papers", "Merged papers", "Not of type article", "Types other than article"], type_rows)
     yrs_by_unit = defaultdict(set)
     for src_, u_, wid_, y_, ty_, na_ in rec_info:
         if y_ is not None:
@@ -345,7 +369,8 @@ def main():
     own_year_units = {u_ for src_, u_, wid_, y_, ty_, na_ in rec_info
                       if src_ in TARGET_JOURNALS and y_ is not None and YEAR_MIN <= int(y_) <= YEAR_MAX}
     same_result = own_year_units == b4_units
-    print(f"B4: merged papers whose records have differing years: {n_diff_years}; same paper set if each record's own year is used: {same_result}")
+    print(f"Merged papers whose raw records have differing years (all records, with or without a source name): {n_diff_years}")
+    print(f"B4: same paper set if each record's own year is used: {same_result}")
     yr_clause = ("; the set of matched papers is the same if each record's own year is used instead" if same_result
                  else "; using each record's own year would change the set of matched papers")
     recs = {}
@@ -441,13 +466,13 @@ Counts: {pl(overlap_b1_b3, 'author is', 'authors are')} in both the B1 and B3 li
 
 {t3}
 
-Sensitivity (the primary list above is unchanged): the same ranking with the {n_excl:,} polycrisis papers that have more than {SENS_MAX_AUTHORS} author ids left out. The network then has {len(sedges):,} edges. {sens_overlap:,} of its top {TOP_N} are also in the primary top {TOP_N}. File: `data/outreach_B3_sensitivity.csv`.
+Sensitivity (the primary list above is unchanged): the same ranking with the {n_excl:,} polycrisis papers that have more than {SENS_MAX_AUTHORS} author ids left out. The network then has {len(sedges):,} edges. {sens_overlap:,} of its top {TOP_N} are also in the primary top {TOP_N}. {pl(s_tie_other, 'other author is', 'other authors are')} tied with rank {TOP_N} in this list, at ranks {s_tied_pos[0] + 1} to {s_tied_pos[-1] + 1}, so the cut at {TOP_N} {'falls inside a tie' if s_tie_other else 'is not inside a tie'}. File: `data/outreach_B3_sensitivity.csv`.
 
 {t3s}
 
 ## B4. Authors in the target journals, 2024 to 2026
 
-Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. {n_diff_years:,} merged papers have records with differing years{yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
+Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. {n_diff_years:,} merged papers (counted over all their raw records, in both corpora) have records with differing years{yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
 Source names that contain a target name but are not an exact match, and so were not used (papers in range): {near_txt}.
 
@@ -460,6 +485,12 @@ Why some rows are small or empty. The zero rows are explained by the records in 
 {wtab}
 
 {t4}
+
+## Work types
+
+No list filters by work type. Errata, editorials and other non article records count as papers like any other. The type is OpenAlex's type for the merged paper's most cited record. Counts of papers that are not of type article, for the papers behind each list:
+
+{ttab}
 
 ## Limitations
 

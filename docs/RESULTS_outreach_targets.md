@@ -98,7 +98,7 @@ Counts: 6 authors are in both the B1 and B3 lists. 13 authors have the same degr
 | 26 | A5119730476 | Amanda J. Aceituno | 82 | 0.00007106 | 12 | 2 | Leuphana University of Lüneburg; Stockholm Resilience Centre; Stockholm University |
 | 27 | A5119730483 | Uchi D. Terhile | 82 | 0.00007106 | 12 | 2 | Federal University Dutse |
 
-Sensitivity (the primary list above is unchanged): the same ranking with the 11 polycrisis papers that have more than 20 author ids left out. The network then has 4,460 edges. 8 of its top 30 are also in the primary top 30. File: `data/outreach_B3_sensitivity.csv`.
+Sensitivity (the primary list above is unchanged): the same ranking with the 11 polycrisis papers that have more than 20 author ids left out. The network then has 4,460 edges. 8 of its top 30 are also in the primary top 30. 2 other authors are tied with rank 30 in this list, at ranks 30 to 32, so the cut at 30 falls inside a tie. File: `data/outreach_B3_sensitivity.csv`.
 
 | Rank | OpenAlex author id | Name | Degree | Betweenness | In primary top 30 |
 |---|---|---|---|---|---|
@@ -120,7 +120,7 @@ Sensitivity (the primary list above is unchanged): the same ranking with the 11 
 
 ## B4. Authors in the target journals, 2024 to 2026
 
-Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: Global Sustainability, Scientometrics, Sustainability, Journal of Industrial Ecology. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from 2024 to 2026. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. 19 merged papers have records with differing years; the set of matched papers is the same if each record's own year is used instead. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
+Method: the target journals are the ones docs/PUBLICATION_STRATEGY.md names as submission targets: Global Sustainability, Scientometrics, Sustainability, Journal of Industrial Ecology. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from 2024 to 2026. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. 30 merged papers (counted over all their raw records, in both corpora) have records with differing years; the set of matched papers is the same if each record's own year is used instead. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
 Source names that contain a target name but are not an exact match, and so were not used (papers in range): Frontiers in Sustainability (2); Nature Sustainability (1); SCI Sustainability (1); Strategies for sustainability (1); Sustainability Science (4); Sustainability Science Practice and Policy (1); World sustainability series (2).
 
@@ -159,6 +159,18 @@ Why some rows are small or empty. The zero rows are explained by the records in 
 | 13 | A5111409244 | Linda Booth Sweeney | 2 | 3 | Global Sustainability | yes | yes | Center for Innovation |
 | 14 | A5117608213 | Jenson Chong-Leng Goh | 2 | 3 | Global Sustainability | yes | yes | Singapore Institute of Technology; Turība University |
 | 15 | A5117608214 | Gillian S. Martin Mehers | 2 | 3 | Global Sustainability | yes | yes | Erasmus University Rotterdam |
+
+## Work types
+
+No list filters by work type. Errata, editorials and other non article records count as papers like any other. The type is OpenAlex's type for the merged paper's most cited record. Counts of papers that are not of type article, for the papers behind each list:
+
+| Set of papers | Merged papers | Not of type article | Types other than article |
+|---|---|---|---|
+| All merged papers in either corpus | 2458 | 885 | book-chapter 442, preprint 122, book 102, other 68, peer-review 32, dissertation 30, report 20, review 19, editorial 17, paratext 12, dataset 8, letter 6, reference-entry 4, erratum 2, software 1 |
+| Papers of the B1 authors | 90 | 32 | book-chapter 13, preprint 11, review 4, peer-review 2, dataset 1, erratum 1 |
+| Papers of the B2 authors | 50 | 22 | book-chapter 8, peer-review 8, review 3, book 1, erratum 1, preprint 1 |
+| Papers of the B3 authors | 25 | 11 | preprint 6, book-chapter 2, erratum 1, peer-review 1, review 1 |
+| Papers in B4 | 30 | 4 | preprint 2, erratum 1, review 1 |
 
 ## Limitations
 
