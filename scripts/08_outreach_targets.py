@@ -13,7 +13,7 @@ What this does:
     B3  central authors in the polycrisis coauthor network (degree and betweenness, top 30)
     B4  authors of 2024 to 2026 papers in the target journals named in docs/PUBLICATION_STRATEGY.md
     These are research leads. The script collects no contact details.
-    Every number in the note is computed and printed here.
+    Every number in the note is computed by the script and written to stdout or the CSVs.
 
 Run AFTER 06_citation_bridge.py has written data/canon_metadata_cache.json (from the repo root):
     .venv/bin/python scripts/08_outreach_targets.py
@@ -46,15 +46,17 @@ TOP_N = 30
 TABLE_N = 15
 TARGET_JOURNALS = ["Global Sustainability", "Scientometrics", "Sustainability", "Journal of Industrial Ecology"]
 YEAR_MIN, YEAR_MAX = 2024, 2026
-BTW_DECIMALS = 8        # B3 betweenness is rounded to this many decimals before ranking
+WINDOW = f"{YEAR_MIN} to {YEAR_MAX}"
+NX_TESTED = "3.2.1"      # networkx version the script was tested with
+BTW_DECIMALS = 8        # B3 betweenness is rounded to this many decimals before ranking and printed with the same number
 SENS_MAX_AUTHORS = 20   # B3 sensitivity: papers with more author ids than this are left out
 INST_SHOWN = 3          # institutions shown per author in the note tables (the CSV has all)
 
 try:
     import networkx as nx
 except ImportError:
-    raise SystemExit("networkx is required (tested with 3.2.1) and is not in requirements.txt. "
-                     "Install it in the venv with: .venv/bin/python -m pip install networkx==3.2.1")
+    raise SystemExit("networkx is required (tested with " + NX_TESTED + ") and is not in requirements.txt. "
+                     "Install it in the venv with: .venv/bin/python -m pip install networkx==" + NX_TESTED)
 
 # ── Reuse 06 so counts agree ──────────────────────────────────────────────────
 _spec = importlib.util.spec_from_file_location("bridge06", ROOT / "scripts" / "06_citation_bridge.py")
@@ -304,11 +306,11 @@ def main():
     print(f"B3: largest author list on one merged polycrisis paper: {max_auth}")
     write_csv(DATA_DIR / "outreach_B3.csv",
               ["rank", "openalex_author_id", "name", "degree", "betweenness", "other_authors_tied_with_this_row", "polycrisis_papers", "institutions"],
-              [[i + 1, a, name_of(tabP[a]), deg[a], f"{btw[a]:.8f}", other_tied(a), len(tabP[a]["papers"]), "; ".join(insts(tabP[a]))]
+              [[i + 1, a, name_of(tabP[a]), deg[a], f"{btw[a]:.{BTW_DECIMALS}f}", other_tied(a), len(tabP[a]["papers"]), "; ".join(insts(tabP[a]))]
                for i, a in enumerate(b3)])
     write_csv(DATA_DIR / "outreach_B3_sensitivity.csv",
-              ["rank", "openalex_author_id", "name", "degree", "betweenness", "in_primary_top_30", "institutions"],
-              [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.8f}", "yes" if a in b3 else "no", "; ".join(insts(tabP[a]))]
+              ["rank", "openalex_author_id", "name", "degree", "betweenness", f"in_primary_top_{TOP_N}", "institutions"],
+              [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.{BTW_DECIMALS}f}", "yes" if a in b3 else "no", "; ".join(insts(tabP[a]))]
                for i, a in enumerate(sens_top)])
     overlap_b1_b3 = len(set(b1_top) & set(b3))
     print(f"B3: authors in both the B1 and B3 top {TOP_N}: {overlap_b1_b3}")
@@ -337,7 +339,7 @@ def main():
     b4 = sorted(tab4, key=lambda a: (-len(tab4[a]["papers"]), -tab4[a]["cites"], a))
     jr = {a: sorted({s for s in TARGET_JOURNALS if any(p in pap4[s] for p in tab4[a]["papers"])}) for a in tab4}
     write_csv(DATA_DIR / "outreach_B4.csv",
-              ["rank", "openalex_author_id", "name", "papers_2024_2026_in_target_journals", "total_cited_by_count",
+              ["rank", "openalex_author_id", "name", f"papers_{YEAR_MIN}_{YEAR_MAX}_in_target_journals", "total_cited_by_count",
                "latest_year", "journals", "in_polycrisis", "in_ltg", "institutions"],
               [[i + 1, a, name_of(tab4[a]), len(tab4[a]["papers"]), tab4[a]["cites"], tab4[a]["year"], "; ".join(jr[a]),
                 "yes" if a in tabP else "no", "yes" if a in tabL else "no", "; ".join(insts(tab4[a]))]
@@ -365,7 +367,7 @@ def main():
                 continue
             n_, lo, hi = tie_span(order, kf, pos)
             cells.append(f"{n_} tied, ranks {lo} to {hi}" if n_ > 1 else "no tie")
-            print(f"Ties {nm} at rank {pos}: {n_} authors with identical sort keys before the id, ranks {lo} to {hi}")
+            print(f"Ties {nm} at rank {pos}: {pl(n_, 'author', 'authors')} with identical sort keys before the id, ranks {lo} to {hi}")
         tie_rows.append([nm, seq, cells[0], cells[1]])
     tietab = md_table(["List", "Order (each step applies only when the earlier ones tie)", f"Full tie at rank {TABLE_N}", f"Full tie at rank {TOP_N}"], tie_rows)
     def type_counts(units):
@@ -430,31 +432,31 @@ def main():
                    for i, r in enumerate(rows2[:TABLE_N])])
     bcol = "Betweenness"
     t3 = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, "Other authors tied with this row", "Polycrisis papers", f"Institutions seen (up to {INST_SHOWN})"],
-                  [[i + 1, a, name_of(tabP[a]), deg[a], f"{btw[a]:.8f}", other_tied(a), len(tabP[a]["papers"]), short_inst(tabP[a])]
+                  [[i + 1, a, name_of(tabP[a]), deg[a], f"{btw[a]:.{BTW_DECIMALS}f}", other_tied(a), len(tabP[a]["papers"]), short_inst(tabP[a])]
                    for i, a in enumerate(b3_rows)])
     t3s = md_table(["Rank", "OpenAlex author id", "Name", "Degree", bcol, f"In primary top {TOP_N}"],
-                   [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.8f}", "yes" if a in b3 else "no"]
+                   [[i + 1, a, name_of(tabP[a]), sdeg[a], f"{sb[a]:.{BTW_DECIMALS}f}", "yes" if a in b3 else "no"]
                     for i, a in enumerate(sens_top[:TABLE_N])])
     t4 = md_table(["Rank", "OpenAlex author id", "Name", "Target journal papers", "Total citations", "Journals", "In polycrisis", "In LtG", f"Institutions seen (up to {INST_SHOWN})"],
                   [[i + 1, a, name_of(tab4[a]), len(tab4[a]["papers"]), tab4[a]["cites"], ", ".join(jr[a]),
                     "yes" if a in tabP else "no", "yes" if a in tabL else "no", short_inst(tab4[a])]
                    for i, a in enumerate(b4[:TABLE_N])])
-    tj = md_table(["Source display name", "Result", "Merged papers 2024 to 2026", "Authors"] + [str(y) for y in range(YEAR_MIN, YEAR_MAX + 1)], jr_rows)
+    tj = md_table(["Source display name", "Result", f"Merged papers {WINDOW}", "Authors"] + [str(y) for y in range(YEAR_MIN, YEAR_MAX + 1)], jr_rows)
     near_txt = ("; ".join(f"{s} ({c})" for s, c in sorted(near.items())) if near else "none")
     nodash_names = ", ".join(TARGET_JOURNALS)
     b3_method = (f"The network has one node per author id in the polycrisis corpus and one edge between two authors who share at least one merged polycrisis paper. "
                  f"It has {len(nodes):,} nodes and {len(edges):,} edges in {ncomp:,} connected components; the largest has {giant:,} nodes. "
                  f"Degree is the number of distinct coauthors. Betweenness is the networkx value for the unweighted graph (version {nx.__version__}), normalised, computed exactly. "
                  f"The list is ranked by betweenness, then degree, then author id in text order. "
-                 f"The largest number of author ids on one paper is {max_auth:,}. Edges join only authors who have an author id, so authorships without an id add no edges. Every paper adds a full set of edges among its authors with an id, with no cap, so a long author list adds many edges. networkx 3.2.1 is required to run the script; the script stops with a message if networkx is missing.")
+                 f"The largest number of author ids on one paper is {max_auth:,}. Edges join only authors who have an author id, so authorships without an id add no edges. Every paper adds a full set of edges among its authors with an id, with no cap, so a long author list adds many edges. networkx {NX_TESTED} is required to run the script; the script stops with a message if networkx is missing.")
     lines = f"""# Outreach target lists from the corpus authorships
 
-Generated by `scripts/08_outreach_targets.py`. Every number below is computed and printed by that script. These are research leads. This note holds no contact details.
+Generated by `scripts/08_outreach_targets.py`. Every number below is computed by the script and written to stdout or the CSVs. These are research leads. This note holds no contact details.
 
 ## Data and identity
 
 - Papers are the merged records of `scripts/06_citation_bridge.py` (same loading, same `build_gmap`). {n_raw:,} distinct ids ({st['entries']:,} entries in the two raw files, {st['entries'] - n_raw:,} extra entries from repeated ids) became {len(meta):,} merged papers. Of these, {len(P):,} are in the polycrisis corpus, {len(L):,} in the LtG corpus and {len(both_units):,} in both.
-- An author is an OpenAlex author id. Names are never used to match people. The name shown is the one most often seen for that id.
+- An author is an OpenAlex author id. Names are never used to match people. The name shown is the one most often seen for that id in the papers behind that list, and the first in text order if several are equally common. Institutions are ordered by how often they were seen, then in text order. Each list uses its own paper set, so one id can show a different name or institution order in different lists.
 - A merged paper takes the authorships of all its raw records, joined by author id, so an author counts once per merged paper. Year and citation count are those of the merged paper's most cited record, as in 06.
 - Authorships read: {st['authorships']:,}. Authorships with no author id: {st['without author id']:,}. These are left out of every list.
 - Merged papers with no usable author id: {sum(1 for u in meta.index if not unit_auth.get(u)):,}.
@@ -463,7 +465,7 @@ Generated by `scripts/08_outreach_targets.py`. Every number below is computed an
 
 ## Basis of the figures
 
-Total citations, latest year and institutions seen are taken from a different set of papers in each list. B1 and B3: the author's polycrisis papers. B2: the author's papers in either corpus. B4: the author's papers in the target journals in the 2024 to 2026 window only.
+Total citations, latest year and institutions seen are taken from a different set of papers in each list. B1 and B3: the author's polycrisis papers. B2: the author's papers in either corpus. B4: the author's papers in the target journals in the {WINDOW} window only.
 
 ## B1. Most prolific polycrisis authors
 
@@ -495,7 +497,7 @@ Sensitivity (the primary list above is unchanged): the same ranking with the {n_
 
 {t3s}
 
-## B4. Authors in the target journals, 2024 to 2026
+## B4. Authors in the target journals, {WINDOW}
 
 Method: the target journals are the four journals chosen for this list (from the outreach plan): {nodash_names}. A paper matches when the source display name of its primary location equals one of these names exactly, for any raw record of the merged paper, in either corpus, with a publication year from {YEAR_MIN} to {YEAR_MAX}. The year is the merged paper's year (the year of its most cited record), not each raw record's own year. {n_diff_years:,} merged papers (counted over all their raw records, in both corpora) have records with differing years{yr_clause}. Rank authors by papers in this set, then total citations, then author id. The columns In polycrisis and In LtG say whether the author has any paper in that corpus, not necessarily a target journal paper.
 
@@ -513,7 +515,7 @@ Why some rows are small or empty. The raw files hold only the primary location o
 
 ## Ties
 
-A full tie means every sort key before the author id is equal. Where a tie crosses the end of a {TABLE_N} row table or the cut at {TOP_N}, the rows beyond the cut have the same keys as the last row shown. The B3 table prints the whole tie at rank 15; the other tables stop at rank 15, and the CSV files hold the full lists (B1 and B3 hold the top 30).
+A full tie means every sort key before the author id is equal. Where a tie crosses the end of a {TABLE_N} row table or the cut at {TOP_N}, the rows beyond the cut have the same keys as the last row shown. The B3 table prints the whole tie at rank {TABLE_N}; the other tables stop at rank {TABLE_N}, and the CSV files hold the full lists (B1 and B3 hold the top 30).
 
 {tietab}
 
