@@ -1,0 +1,242 @@
+# Methods (draft) and planned figures and tables
+
+Status: DRAFT for the owner. Target journal: Global Sustainability (Cambridge).
+
+This file holds only a Methods section and a figure and table list. It has no abstract, introduction, results or discussion. The paper's headline claim is not decided. In particular, the choice between the two canon definitions (shared works removed or shared works kept) is left to the owner, and Section 2.4 describes both as reported analyses. No result is stated here. Numbers below describe the data and the instruments (corpus sizes, counts of records, parameters), not findings.
+
+Every paragraph is followed by an HTML comment that names the script function or line and the results note line it comes from. Unknowns are written as [TO CONFIRM: ...]. A list of all of them, and of drafting notes that are not for the manuscript, is at the end.
+
+## 2. Methods
+
+### 2.1 Data source and retrieval
+
+We used OpenAlex, an open index of scholarly works, through its public works endpoint (`https://api.openalex.org/works`). Two corpora were built from two title and abstract searches. The polycrisis corpus comes from the filter `title_and_abstract.search:polycrisis`. The Limits to Growth (LtG) corpus starts from the exact phrase search `title_and_abstract.search:"limits to growth"`, which was then filtered as described in Section 2.2. The filter strings contain no date, language, document type or field restriction.
+
+<!-- src: scripts/01_fetch_openalex.py:35-48; scripts/01b_fetch_ltg_refined.py (working copy):267; git show HEAD:scripts/01b_fetch_ltg_refined.py:220 -->
+
+Records were requested in pages of 200 with cursor paging and a delay of 0.1 seconds between pages. The request named these fields: id, title, publication year, publication date, type, cited by count, DOI, primary location, authorships, concepts, keywords, referenced works, related works and the inverted abstract index. Each pull was saved twice. The raw JSON keeps every requested field in full. A flat CSV keeps a reduced form: the first five author names, the first five institution names in alphabetical order, the journal name, the abstract rebuilt from the inverted index, the five highest scoring concepts, the first ten keywords in the order OpenAlex returned them, and the counts of references and related works. The caps on concepts and keywords matter for Section 2.5, because the keyword analysis reads the CSV columns.
+
+<!-- src: scripts/01_fetch_openalex.py:51-66, 70-79, 89-113, 116-160, 163-185; scripts/01b_fetch_ltg_refined.py:160-165, 188-210 (HEAD line numbers); RESULTS_temporal_keywords.md:97 -->
+
+The polycrisis pull was saved as 1,500 records that hold 1,488 distinct OpenAlex ids. The broad LtG pull, before any filtering, was saved as 13,172 records. The cause of repeated ids within a pull is not recorded in the code. The latest publication date in either corpus is March 29, 2026.
+
+<!-- src: RESULTS_temporal_keywords.md:12, 26; scripts/generate_summary_doc.py:433; RESULTS_citation_bridge.md:221 -->
+
+Retrieval dates for the original pulls: [TO CONFIRM: the calendar dates of the polycrisis pull, the broad LtG pull and the refined LtG pull. The only dates in the committed files are the header date of March 27, 2026 in `scripts/01_fetch_openalex.py`, which is the date the script was written, and the commit dates of the scripts. The strategy memo is dated April 16, 2026]. Because OpenAlex changes over time, the bibliographic fields used here (publication year, type, cited by count, keywords, concepts, authorships) are those held at the time of each original pull. The committed scripts carry a placeholder contact address in the request parameters (`EMAIL = "your@email.com"`) [TO CONFIRM: whether a real address was supplied when the pulls were run].
+
+<!-- src: scripts/01_fetch_openalex.py:4, 31; scripts/01b_fetch_ltg_refined.py:38; docs/PUBLICATION_STRATEGY.md:3 -->
+
+Reference lists were requested again on October 24, 2026, for every distinct corpus id (2,616 ids), in batches of 50 with the filter `openalex_id:<ids joined by |>`. The request selected only the id, the referenced works, the publication year and the type, with up to three retries after a rate limit or server error, and sent no contact address. OpenAlex returned records for 2,485 of the 2,616 ids. The 131 ids with no returned record keep their originally saved reference list. The refetch was saved in `data/references_refetch_2026-10-24.json` and the raw pulls were not changed.
+
+<!-- src: scripts/06a_refetch_references.py:18, 39-43, 71-110, 149-163; data/references_refetch_2026-10-24.json (2,485 entries, fetched field 2026-10-24T19:38 UTC); RESULTS_citation_bridge.md:3, 255 -->
+
+### 2.2 Corpus construction and filtering
+
+The broad LtG search returns many works from biology, ecology and medicine that use the phrase for cell growth, plant growth and similar topics. The LtG corpus is therefore a filtered subset of the broad pull. The filter reads the lower cased title, the rebuilt abstract, all OpenAlex keywords and all OpenAlex concepts of each record as one text, and tests marker strings by substring match (not whole word match). The tiered filter has four rules, applied in this order.
+
+1. A record that contains any of 15 strong markers is kept, even if biology terms are present. The strong markers are `meadows`, `donella`, `jorgen randers`, `forrester`, `club of rome`, `world3`, `world 3`, `herrington`, `nebel`, `turner`, `overshoot and collapse`, `finite world`, `polycrisis`, `degrowth` and `post-growth`.
+2. Otherwise, a record that contains any of 68 biology, ecology, medicine or chemistry markers is rejected. The list covers ecological and microbial terms, cell and cancer biology, plant and crop terms, animal biology, molecular biology, nutrient limitation and clinical terms.
+3. Otherwise, a record that contains any of 11 medium markers is kept: `planetary boundaries`, `system dynamics`, `systems thinking`, `ecological footprint`, `carrying capacity`, `steady state economy`, `ecological economics`, `sustainability transition`, `industrial output`, `nonrenewable resources` and `overshoot`.
+4. Otherwise, a record is kept if its title is shorter than 120 characters and contains the exact phrase "limits to growth". All other records are rejected.
+
+The script records the rule that decided each record, so the filter can be audited, and it has a mode (`--refilter`) that reapplies the rules to the saved refined raw file without the network.
+
+<!-- src: scripts/01b_fetch_ltg_refined.py (working copy, uncommitted):44-93, 138-177, 255-285; RESULTS_temporal_keywords.md:90; RESULTS_citation_bridge.md:248 -->
+
+The committed version of the script (commit 0c4a7e6, April 1, 2026) uses a different, flat filter: a record is kept if its text contains any one of 32 markers (for example `collapse`, `pollution`, `population growth`, `degrowth`, `polycrisis`), and the only biology check is inside the short title fallback. Which filter produced the saved refined file is not settled by the committed files: [TO CONFIRM: that `data/ltg_refined_papers.csv` was produced by the tiered filter in the working copy of `scripts/01b_fetch_ltg_refined.py`, and commit that script before submission. The Results notes describe the tiered logic. See the drafting notes at the end for the check I ran]. The Methods text above describes the tiered filter.
+
+<!-- src: git show HEAD:scripts/01b_fetch_ltg_refined.py:45-54, 101-143; git diff HEAD on scripts/01b_fetch_ltg_refined.py; RESULTS_temporal_keywords.md:90 -->
+
+After filtering, the refined LtG file holds 1,154 records with 1,135 distinct ids. The two corpora share 7 papers. Together they hold 2,616 distinct OpenAlex ids. Repeated ids are removed by id in each analysis: the bridge script keeps one row per id across both corpora for metadata and keeps corpus membership as two id sets, and the keyword script keeps one row per id inside each corpus.
+
+<!-- src: RESULTS_temporal_keywords.md:12; RESULTS_citation_bridge.md:11, 76; scripts/06_citation_bridge.py:78-83; scripts/07_temporal_keywords.py:123-128 -->
+
+OpenAlex often holds several records for one work (for example a preprint, a journal version and a book chapter version). The bridge analysis therefore merges records before it counts anything. The rules are as follows. Corpus papers merge when they have the same normalised title (at least 12 characters) and the same first author surname, and a paper with no first author on record never merges. Cited works that are cited by at least 3 papers within one corpus (969 works, called the pool) merge when they have the same normalised title, with one further rule: a bare title that equals the part before the colon of longer titles joins the group of longer titles that is cited by the most corpus papers. A union is refused if it would join two corpus papers with different first author surnames. A merged group counts as one work when cited and as one paper when tested, with the union of its members' reference lists. A reference from a merged paper to the paper itself is dropped. After merging, the corpus holds 2,458 papers: 1,385 in the polycrisis corpus, 1,080 in the LtG corpus and 7 in both. In total 168 groups were merged, covering 364 ids. The exact rules are in `build_gmap` and `make_context` in `scripts/06_citation_bridge.py`. Results are also computed without merging.
+
+<!-- src: scripts/06_citation_bridge.py:build_gmap (247-336), make_context (339-354), constants 227-231; RESULTS_citation_bridge.md:13, 22, 62, 76; RESULTS_outreach_targets.md:7 -->
+
+Cited works outside the pool are not checked for duplicates, and 58 of the 890 pool works that are not corpus papers have no resolved title and cannot be merged. Titles, years and types of pool works were requested from OpenAlex in batches of 50 and cached locally (`data/canon_metadata_cache.json`), and later runs read the cache. [TO CONFIRM: the date of the metadata lookup. The code does not record it.]
+
+<!-- src: scripts/06_citation_bridge.py:177-205; RESULTS_citation_bridge.md:13, 252, 253 -->
+
+### 2.3 Reference lists
+
+For each paper the analysis uses the union of two reference lists: the list saved in the original raw file and the list from the October 24, 2026 refetch. The union keeps the order of first appearance and removes repeats. When one id occurs more than once in the raw files, the longest saved list is used. In the saved raw files, 809 of 1,500 polycrisis records and 688 of 1,154 LtG records had an empty reference list before the refetch. For comparison the bridge script also computes three other rules: the refetched list if it is nonempty and the saved list otherwise; the saved list only; and the longer of the two lists, with the refetched list used when the lengths are equal.
+
+<!-- src: scripts/06_citation_bridge.py:85-122; scripts/06a_refetch_references.py:7-9; RESULTS_citation_bridge.md:12, 73 -->
+
+The two lists were compared for the 2,616 distinct ids before merging. Both lists were empty for 1,470 ids. Both were nonempty for 1,126 ids: the same set for 536, different with neither containing the other for 472, refetched list shorter and contained in the saved list for 114, and refetched list longer and containing the saved list for 4. Only the refetched list was nonempty for 6 ids and only the saved list for 14.
+
+<!-- src: scripts/06_citation_bridge.py:94-122; RESULTS_citation_bridge.md:73 -->
+
+Coverage is incomplete, and it differs by corpus and by document type. After merging, 681 of 1,385 polycrisis papers (49.2%) have a nonempty reference list, as do 447 of 1,080 LtG papers (41.4%) and 1,122 of 2,458 papers in either corpus (45.6%). The mean list length is 43.2 references for polycrisis papers and 30.8 for LtG papers, among papers with a list. By document type (papers with a list out of all papers, for the six most common of 16 types): `article` 830 of 1,573; `book-chapter` 185 of 442; `preprint` 42 of 122; `book` 9 of 102; `other` 4 of 68; `peer-review` 11 of 32. Only papers with a nonempty list can be tested in the citation analysis, and they form the denominator for every share reported there.
+
+<!-- src: scripts/06_citation_bridge.py:538-550; RESULTS_citation_bridge.md:18, 67-71, 246 -->
+
+### 2.4 Citation bridge analysis
+
+The aim of this analysis is to find corpus papers whose reference lists contain works from the base of frequently cited sources of each tradition. The base is called a canon, and it is built from the data, with no work chosen by hand.
+
+<!-- src: RESULTS_citation_bridge.md:7, 14; scripts/06_citation_bridge.py:1-17 -->
+
+**Canon.** For each corpus we count, for every cited work, the number of that corpus's papers that cite it (a paper counts once per work, and a paper in both corpora counts in both). Canon_P is the N works cited by the most polycrisis papers. Canon_L is the N works cited by the most LtG papers. Counting is done on merged records and, as a comparison, on unmerged records. N = 50 is the value used for the detailed tables and for the tie, trend and year checks. N = 25 and N = 100 are run as sensitivity. Ties at the cutoff count are broken by the OpenAlex id in text (string) order, not numeric order. A second canon definition (Variant 2) takes the N most cited papers inside each corpus by their OpenAlex `cited_by_count`, with the same tie rule.
+
+<!-- src: scripts/06_citation_bridge.py:top_n (127-134), ref_counts (137-141), build_canons (144-159), sens_grid (442-460); RESULTS_citation_bridge.md:14, 16 -->
+
+**Shared canon, two reported variants.** Some works appear in both top N lists. Two ways of handling them are computed and reported, and the paper will need to state which one carries the main argument [owner decision]. In the shared works removed variant, every work in both top N lists is deleted from both canons, so Canon_P and Canon_L do not overlap, and a bridge paper must cite a work specific to each list. In the shared works kept variant, both full top N lists are used as they are, so a shared work counts toward both canons, and one citation to a shared work can satisfy both sides. The shared works removed variant is computed for both canon definitions (most referenced works and Variant 2), for N = 25, 50 and 100, with merged and unmerged records. The shared works kept variant is computed for the most referenced works definition, for the same N values and both record treatments, and has its own random reference comparison. The tie, trend, year and top paper analyses below were run in the script for the shared works removed variant at N = 50 only. Running them for the shared works kept variant would need a change to the script.
+
+<!-- src: scripts/06_citation_bridge.py:152-156 (eff_p, eff_l), 444-460 (variants), 587-597 (kept null), 565-612, 684-727; RESULTS_citation_bridge.md:15, 80-117, 151-160, 123 -->
+
+**Bridge paper and threshold.** A bridge paper is a corpus paper whose merged reference list contains at least one work in Canon_P and at least one work in Canon_L. A stricter version requires at least two works in each canon. The denominator is the set of papers with a nonempty reference list, and never all papers. Corpus membership of each bridge paper is recorded as polycrisis, LtG or both.
+
+<!-- src: scripts/06_citation_bridge.py:find_bridges (162-169), 531-536, 673-682; RESULTS_citation_bridge.md:17, 18 -->
+
+**Random reference comparison (two null models).** Both models keep each tested paper's own number of references, draw that many distinct works at random, and count bridge papers against the real canons. In the within corpus model, a polycrisis only paper draws from the pooled references of polycrisis papers, an LtG only paper from the pooled references of LtG papers, and a paper in both corpora from the union of the two. Works are drawn with probability proportional to the number of tested papers in that pool that cite them, and a repeat of a work within one paper is redrawn. In the pooled model, every paper draws from the references of all tested papers together. Both models are run on merged records. Each uses 1,000 draws with a fixed seed (Section 2.7), and we report the mean, the 5th and 95th percentiles and the maximum of the bridge counts. The within corpus model is run for the shared works removed variant at N = 25, 50 and 100 with one and two references per side, and again for the shared works kept variant. The pooled model is run for the shared works removed variant only. Neither model includes topic structure inside a field.
+
+<!-- src: scripts/06_citation_bridge.py:null_bridge (357-399), 570-597; RESULTS_citation_bridge.md:127, 140, 151, 162 -->
+
+**Tie handling for the canon.** At N = 50 the cutoff count is reached by more works than there are open slots in both canons, so the canon depends on the tie rule. We therefore repeat the bridge count with the canon built three ways: by id text order, by a strict canon that keeps only works above the cutoff count (so it can hold fewer than N works), and by random tie breaking among the tied works (500 draws, mean and 5th to 95th percentile). This is run for N = 25, 50 and 100, with one and two references per side. For Variant 2, the number of papers tied at the cutoff count is reported for each N.
+
+<!-- src: scripts/06_citation_bridge.py:tie_bridge (402-435), 599-612, 880-889; RESULTS_citation_bridge.md:164-177 -->
+
+**Further sensitivity analyses.** (1) Merged records against unmerged records. (2) The four reference list rules in Section 2.3. (3) Keeping or dropping references that point to the merged paper itself. (4) Restricting the tested papers to those published in or after three cutoff years, taken from the canon works' own publication years: the median year of the pooled canon works rounded up, the higher of the two canon medians, and the newest canon work year. A paper cannot cite a work published after it. For a merged cited work the year used is the earliest year among its records, and the type is that of the earliest record. (5) Counts of bridge papers by year from 2000, and by five periods (2000 to 2014, 2015 to 2019, 2020 to 2022, 2023 to 2024, 2025 to 2026), with years that have fewer than 10 tested papers marked as unstable. Papers without a year are left out of the yearly counts. 2026 is a partial year. (6) A list of the bridge papers with the highest `cited_by_count`, using standard competition ranking (equal counts share a rank), showing all papers tied at the last shown rank.
+
+<!-- src: scripts/06_citation_bridge.py:94-102, 349, 525-530, 627-637, 684-727, 751-755; RESULTS_citation_bridge.md:62, 73, 182, 221, 237-239 -->
+
+### 2.5 Keyword analysis
+
+**Keyword source.** Terms come from the `keywords` and `concepts` columns of the two paper CSVs, so they are OpenAlex keyword and concept tags and not author keywords. Each cell is split on semicolons, trimmed, lower cased and kept if longer than 2 characters, and a paper counts a term once. The CSVs hold at most the first 10 keywords and the 5 highest scoring concepts per record. In the raw records, 691 of 2,616 papers have more than 10 keywords (the most is 26) and 1,965 have more than 5 concepts, so those papers lose tags. A fixed stopword list of 44 terms is then removed. It contains generic discipline labels (for example `sociology`, `mathematics`, `history`), biology labels linked to growth studies in biology (for example `botany`, `cell biology`, `nutrient`), and a few disambiguation labels, plus `crisis response` and `epistemology`. Any term containing a bracket is also removed. A paper with no term left is called a paper with no usable term and is left out of every keyword measure. The stopword list is the one in `scripts/05_simple_viz.py`, and the keyword script checks at start that its copy is equal.
+
+<!-- src: scripts/07_temporal_keywords.py:74-101, 106-117; scripts/05_simple_viz.py:33-49, 56-63; scripts/02_bibliometric_analysis.py:107-120; RESULTS_temporal_keywords.md:11, 97 -->
+
+**Comparison with the earlier 21 of 50 figure.** The earlier figure was made from term frequency files saved by `scripts/02_bibliometric_analysis.py` (the 100 most frequent terms per corpus, over all CSV rows) and read by `scripts/05_simple_viz.py`, which takes the first 50 terms of each cleaned file. The keyword script recomputes the full period top 50 lists directly from the paper CSVs and compares them with that route. The two routes differ in three ways. First, the CSVs hold repeated ids (1,500 polycrisis rows for 1,488 ids, 1,154 LtG rows for 1,135) and the earlier route counts each row, while the keyword script keeps each id once. Second, `02` stores an empty keyword cell as the text `nan`, which `05` drops and the keyword script treats as empty. Third, the tie rule at the cutoff differs: the keyword script breaks ties alphabetically, and the earlier route follows the order of the saved file. Counting every row reproduces the saved counts with no mismatch in the 50 terms of each saved list, and counting each id once changes the count of 12 polycrisis terms and 22 LtG terms in those lists. The two routes give the same overlap as a count (21) but their top 50 sets differ by 2 terms per corpus. Tie robust values for this full period figure are in the Results note.
+
+<!-- src: scripts/02_bibliometric_analysis.py:95-149; scripts/05_simple_viz.py:117-118, 147-153; scripts/07_temporal_keywords.py:291-334; RESULTS_temporal_keywords.md:12 -->
+
+**Periods.** The corpora are split into three publication periods: up to 2022, 2023 to 2024 and 2025 to 2026. The bins were chosen after looking at the counts of papers per year, so that each bin has about 50 or more papers with a usable term in both corpora; the script stops if a bin has fewer than 45. This is a post hoc choice. The polycrisis corpus has few papers before 2023, so all papers up to 2022 form one bin. The LtG corpus has fewer than 50 papers with a usable term in each of 2023 and 2024, so those two years are merged for the main analysis and shown singly for reference only. Papers without a publication year are in no period. A full period row uses every paper with a usable term, with or without a year. The latest date in the data is March 29, 2026, so the last period is not a complete two years.
+
+<!-- src: scripts/07_temporal_keywords.py:56-66 (BINS, REFERENCE_ONLY, MIN_PAPERS), 241-248, 361-374; RESULTS_temporal_keywords.md:13, 16, 26, 100 -->
+
+**Overlap and similarity measures.** For each period and for the full period we compute, from the papers with a usable term: (a) the number of terms shared by the top 50 lists of the two corpora; (b) the Jaccard index of the two top 50 sets (saved in the output CSV); (c) a weighted Jaccard index over all terms, using each term's share of papers in each corpus (sum of the smaller share divided by sum of the larger share); and (d) the cosine similarity of term vectors in which each paper adds a total weight of 1 spread equally over its terms. Measures (c) and (d) do not depend on a top 50 cutoff. For each period we also list the shared terms, and the terms that enter each corpus's top 50 compared with the previous period. A term has entered when it is in this period's strict set and was not among the previous period's candidates (the previous strict set plus every term tied at the previous cutoff). A term is newly shared by the same rule applied to both corpora.
+
+<!-- src: scripts/07_temporal_keywords.py:143-170, 398-437, 440-449; RESULTS_temporal_keywords.md:14, 65 -->
+
+**Tie handling for the top 50.** Many terms can share the count at rank 50, so the top 50 overlap is computed under three tie rules: alphabetical order (the rule used for the saved top keyword lists), a strict set that keeps only terms with a count above the cutoff count, and random tie breaking over 1,000 seeded draws (mean and 5th to 95th percentile). The cutoff count, the number of tied terms and the number of open slots are saved for each period and corpus.
+
+<!-- src: scripts/07_temporal_keywords.py:135-140, 173-188, 198-211, 345-346, 415-416; RESULTS_temporal_keywords.md:14, 37-46 -->
+
+**Size matched control.** The corpora differ in size within each period, so each period row is also computed on equal sized random samples. In each of 300 draws, the smaller of 60 and the number of papers with a usable term available is drawn without replacement from each corpus (60 is below the smallest main period corpus of 75), and the top 50 overlap (with random tie breaking), the weighted Jaccard index and the cosine similarity are computed. We report the mean and the 5th to 95th percentile. The control is not a correction of the observed values. Where a draw takes at least half of a corpus, the spread understates sampling uncertainty, and the note lists those cases.
+
+<!-- src: scripts/07_temporal_keywords.py:67-68, 382-393, 402-407; RESULTS_temporal_keywords.md:15, 48-54, 81 -->
+
+**Duplicate record sensitivity.** The main keyword tables remove repeated records by OpenAlex id only. As a sensitivity analysis, the same title and first author rule as the bridge analysis (Section 2.2) is applied inside each corpus. Within a merged group the record kept is the one with the highest `cited_by_count`, then the one with the most distinct terms, then the first OpenAlex id in text order. The overlap measures are recomputed on the merged sets with their own seeded tie draws.
+
+<!-- src: scripts/07_temporal_keywords.py:219-238, 347-358, 379-380; RESULTS_temporal_keywords.md:79 -->
+
+### 2.6 Co authorship data (optional, for the owner to keep or cut)
+
+Authorship counts are not used in the analyses above. A separate script reads the author ids on the raw records for outreach lists, using the merged papers of Section 2.2. It treats an OpenAlex author id as the identity of a person and never matches names. If the paper reports any authorship statistic, one sentence is enough: authorships were read from the raw records, 5,782 authorships were read, 694 had no author id and were excluded, and 254 merged papers had no usable author id. I recommend omitting this section from the manuscript unless the paper uses authorship data. That script and its note were under revision by another session when this draft was written, so the figures here must be rechecked against the final note.
+
+<!-- src: RESULTS_outreach_targets.md:7-12; scripts/08_outreach_targets.py:60-75, 176-186 -->
+
+### 2.7 Software and reproducibility
+
+All analysis used Python 3.9.6 in the project's virtual environment (`.venv`). The packages imported by the analysis scripts and their installed versions are: `requests` 2.32.5, `pandas` 2.3.3, `numpy` 2.0.2, `matplotlib` 3.9.4 and `tqdm` 4.67.3 for fetching, analysis and the two results figures; `matplotlib-venn` 1.1.2 and `wordcloud` 1.9.6 for the simple figures; and `networkx` 3.2.1 and `pyvis` 0.3.2 for the network figures. `seaborn` and `plotly` are listed in `requirements.txt` but no script imports them, and `numpy` is imported by two scripts but is not listed there. `requirements.txt` has uncommitted changes (four added packages).
+
+<!-- src: .venv pip list and python -V, run during drafting; scripts/01_fetch_openalex.py:22-27; 02:24-29; 04:18-24; 05:15-23; 06:40-52; 06a:29-36; 07:35-47; requirements.txt (working copy) -->
+
+Random steps use fixed seeds. The citation script uses seed 20261024 for the within corpus and pooled null draws, 20261024 plus 3 for the shared works kept null, and 20261024 plus 1 for the canon tie draws, with 1,000 null draws and 500 tie draws. The keyword script uses seed 20261024 for the tie draws and size matched samples (one generator, used in a fixed order, so the results depend on that order) and 20261024 plus 7 for the duplicate record sensitivity, with 1,000 tie draws and 300 size matched draws. The network figures use seed 42 for layout and community detection. The word cloud code sets no seed, so its layout changes between runs.
+
+<!-- src: scripts/06_citation_bridge.py:229-231, 571, 589, 601; scripts/07_temporal_keywords.py:67-70, 345, 354, 378, 387; scripts/04_network_viz.py:45, 123, 154; scripts/05_simple_viz.py:202-208 -->
+
+The fixed parameters are listed in the following table.
+
+| Parameter | Value | Script |
+|:--|:--|:--|
+| Primary canon size N, sensitivity N | 50; 25 and 100 | 06 |
+| Minimum references to each canon | 1 (main), 2 (stricter) | 06 |
+| Pool threshold for duplicate checking of cited works | cited by at least 3 papers within one corpus | 06 |
+| Minimum normalised title length for merging | 12 characters | 06 |
+| Null draws; canon tie draws | 1,000; 500 | 06 |
+| Year shown from; minimum tested papers per year | 2000; 10 | 06 |
+| Keyword top list size | 50 | 07 |
+| Minimum papers per period (script stops below) | 45 | 07 |
+| Tie draws; size matched draws; size matched sample | 1,000; 300; 60 per corpus | 07 |
+
+<!-- src: scripts/06_citation_bridge.py:61-64, 227-231, 571-601; scripts/07_temporal_keywords.py:56-70 -->
+
+The repository `.gitignore` excludes `data/`, `figures/`, every `*.json` file and `__pycache__/`. Therefore the raw pulls, the paper CSVs, the refetch file, the canon metadata cache and all figures are not in version control, and only the scripts and the notes in `docs/` are. The scripts cannot recreate the April 2026 corpora exactly, because a new pull returns the live OpenAlex index. The October 24, 2026 refetch is a dated file that the bridge script reads, and `06a` should not be rerun for reproduction, since it would overwrite that file name with newer lists. [TO CONFIRM: where a frozen copy of `data/` will be archived and cited, for example a DOI deposit.] Given a copy of `data/`, the order is: `02_bibliometric_analysis.py` (term frequency files and journal figures), `06_citation_bridge.py` (offline once `data/canon_metadata_cache.json` exists), `07_temporal_keywords.py` (offline), then `05_simple_viz.py` and `04_network_viz.py` if those figures are used. Each of 06 and 07 rewrites its own results note in `docs/`, together with its CSV files and figure.
+
+<!-- src: .gitignore:1-5; scripts/06a_refetch_references.py:39, 161-163; scripts/06_citation_bridge.py:20-37; scripts/07_temporal_keywords.py:24-32 -->
+
+## Figures and tables planned (proposal, placement for the owner to decide)
+
+All figure files below exist in `figures/` (gitignored). The April 2026 figure files carry local file system dates of April 13, 2026, the same date as the refined corpus file, but the figure code may have changed since, so each figure should be regenerated and checked before use [TO CONFIRM: whether `figures/01_publication_trends.png`, `02_polycrisis_journals.png` and `03_ltg_journals.png` were made by the committed `02` (which reads the broad `ltg_papers.csv`) or by the working copy (which prefers the refined file)].
+
+<!-- src: scripts/02_bibliometric_analysis.py (working copy):40-44; git show HEAD:scripts/02_bibliometric_analysis.py:40; ls figures -->
+
+### Figures
+
+| File | What it shows | Script | Proposed placement |
+|:--|:--|:--|:--|
+| `figures/01_publication_trends.png` | Papers per year, 2000 to 2025, polycrisis and LtG in two panels, with marker lines at 2022 and 2021 | `02_bibliometric_analysis.py` | Main text (corpus description) |
+| `figures/simple_timeline.png` | Papers per year, 2000 to 2025, both corpora on one axis. The legend counts CSV rows, which include repeated ids | `05_simple_viz.py` | Not needed if Figure 01 is used |
+| `figures/bridge_papers_by_year.png` | Bridge paper count per year from 2000 (bars) and share of tested papers (line), hollow points for years with fewer than 10 tested papers. Shared works removed variant, N = 50, merged records | `06_citation_bridge.py` | Main text, if the shared works removed variant is used; a version for the kept variant does not exist |
+| `figures/temporal_keyword_convergence.png` | Left: top 50 overlap by period under random, strict and alphabetical ties plus the size matched control. Right: cosine and weighted Jaccard by period | `07_temporal_keywords.py` | Main text |
+| `figures/simple_venn.png` | Venn diagram of the top 50 terms of the two corpora (earlier route, Section 2.5), with the shared terms listed | `05_simple_viz.py` | Supplement, only with the tie caveat |
+| `figures/simple_top_topics.png` | Top 15 terms per corpus as bars | `05_simple_viz.py` | Supplement |
+| `figures/simple_wordclouds.png` | Word clouds of the top 100 terms per corpus | `05_simple_viz.py` | Not for the paper (outreach use) |
+| `figures/02_polycrisis_journals.png`, `figures/03_ltg_journals.png` | Top 15 journals per corpus | `02_bibliometric_analysis.py` | Supplement |
+| `figures/net_polycrisis_keywords.png`, `figures/net_ltg_keywords.png` | Keyword co occurrence networks (top 60 terms, minimum edge weight 5) | `04_network_viz.py` (untracked) | Supplement, optional |
+| `figures/net_polycrisis_coauthors.png`, `figures/net_ltg_coauthors.png` | Co authorship networks (top 80 authors, at least 2 papers) | `04_network_viz.py` (untracked) | Supplement, optional |
+| `figures/net_convergence.png` | Network of terms shared by the top 40 lists of the two corpora | `04_network_viz.py` (untracked) | Supplement, optional |
+| `figures/net_*.html` | Interactive versions of the network figures | `04_network_viz.py` | Not for the paper |
+
+<!-- src: scripts/02_bibliometric_analysis.py:52-90, 198-215; scripts/05_simple_viz.py:69-110, 116-141, 147-189, 195-226; scripts/04_network_viz.py:10-13, 51-61, 72-87, 104-107, 177-178; scripts/06_citation_bridge.py:728-748; scripts/07_temporal_keywords.py:461-486 -->
+
+### Tables
+
+The tables come from the results notes and the CSV files in `data/`. The notes already contain them in Markdown form.
+
+| Proposed table | What it shows | Source | Proposed placement |
+|:--|:--|:--|:--|
+| T1 Corpus construction | Records, distinct ids, filtered and merged counts, overlap of the two corpora | Section 2.2 counts; `RESULTS_citation_bridge.md:22, 76` | Main text |
+| T2 Reference coverage | Papers, papers with a list, share, references and distinct works by corpus; coverage by document type | `RESULTS_citation_bridge.md:67-71, 246` | Main text |
+| T3 Saved against refetched lists | The eight comparison categories and the reference list rule comparison | `RESULTS_citation_bridge.md:73` | Supplement |
+| T4 Bridge counts at each N and variant | Canon sizes, shared works removed, bridge papers, denominator and share, for both canon definitions, both shared canon variants, both thresholds, merged and unmerged records | `RESULTS_citation_bridge.md:80-117`; `data/bridge_sensitivity.csv` | Main text (selected rows) and supplement (full) |
+| T5 Random reference comparison | Observed count, null mean, 5th and 95th percentiles and maximum, within corpus (both variants) and pooled | `RESULTS_citation_bridge.md:129-160` | Main text or supplement |
+| T6 Canon cutoff ties | Bridge counts by id order, strict canon and random ties | `RESULTS_citation_bridge.md:170-177`; `data/bridge_tie_sensitivity.csv` | Supplement |
+| T7 Shared canon | The works in both top 50 lists with citing paper counts | `RESULTS_citation_bridge.md:209-217` | Main text or supplement |
+| T8 Canon lists | Both top 50 lists with titles, years, types and merged ids | `data/canon_polycrisis_N50.csv`, `data/canon_ltg_N50.csv` | Supplement |
+| T9 Bridge paper list | Bridge papers with corpus, reference counts per canon and `cited_by_count` (top 15 in the note, full list in the CSV) | `RESULTS_citation_bridge.md:182-205`; `data/bridge_papers.csv` | Supplement |
+| T10 Merged record groups | Groups among canon works and bridge papers with the merge rule | `RESULTS_citation_bridge.md:24-60` | Supplement |
+| T11 Bridge share by period | Tested papers, bridge papers and share for the five periods; restricted year checks | `RESULTS_citation_bridge.md:223-239` | Main text or supplement |
+| T12 Papers per period | Papers and papers with a usable term, by corpus and period | `RESULTS_temporal_keywords.md:20-26` | Main text |
+| T13 Keyword overlap by period | Overlap under three tie rules, weighted Jaccard, cosine | `RESULTS_temporal_keywords.md:30-35`; `data/temporal_keyword_overlap.csv` | Main text |
+| T14 Top 50 ties | Cutoff count, tied terms and open slots | `RESULTS_temporal_keywords.md:39-44` | Supplement |
+| T15 Size matched control | Observed against size matched overlap, with single years for reference | `RESULTS_temporal_keywords.md:50-61` | Main text or supplement |
+| T16 New and shared keywords by period | Strict shared and entering terms | `RESULTS_temporal_keywords.md:67-71`; `data/temporal_top_keywords.csv` | Supplement |
+| T17 Duplicate record sensitivity (keywords) | Overlap on title and first author merged sets | `RESULTS_temporal_keywords.md:79`; columns `merged_*` in `data/temporal_keyword_overlap.csv` | Supplement |
+| T18 Parameters | The parameter table in Section 2.7 | Section 2.7 | Supplement |
+| T19 Filter markers | Full strong, medium and biology marker lists of the LtG filter | `scripts/01b_fetch_ltg_refined.py:48-93` | Supplement |
+| T20 Stopword list | The 44 removed terms | `scripts/05_simple_viz.py:33-49` | Supplement |
+
+<!-- src: sources as listed in each row -->
+
+## Index of [TO CONFIRM] items
+
+1. Calendar dates of the three original OpenAlex pulls (polycrisis, broad LtG, refined LtG). Section 2.1.
+2. Whether a real contact address replaced the placeholder `EMAIL` when the pulls ran. Section 2.1.
+3. That the saved refined LtG file was made by the tiered filter in the uncommitted working copy of `scripts/01b_fetch_ltg_refined.py`, then commit that script. Section 2.2.
+4. Date of the canon metadata lookup (title, year and type of cited works). Section 2.2.
+5. Which version of `02_bibliometric_analysis.py` made `figures/01_` to `03_`. Figures section.
+6. Where a frozen copy of `data/` will be archived. Section 2.7.
+
+## Drafting notes for the owner (not for the manuscript)
+
+* The committed `01b` is not the filter the notes describe. I applied both filter versions offline to `data/ltg_papers_raw.json` (13,172 records, 12,889 distinct ids). The committed flat filter keeps 2,118 records and the working copy tiered filter keeps 1,278 records. The saved refined file has 1,154 records (1,135 ids). Of those ids, 1,119 are in the broad pull and 16 are not, so the refined file came from a later pull than the broad file. The tiered filter keeps all 1,154 saved refined records, which is consistent with the tiered filter having made the file. This is evidence, not proof. The decisive record is the run log, which is not in the repository.
+* `02_bibliometric_analysis.py` has the same kind of drift: the committed version reads the broad `ltg_papers.csv`, and the working copy prefers the refined file. The temporal note (line 12) shows that the saved frequency files reproduce from the refined corpus, so the working copy is the version that matches the data.
+* `docs/PUBLICATION_STRATEGY.md` says 1,505 polycrisis papers. The saved files hold 1,500 records and 1,488 distinct ids. Use the file counts. A round 1,500 may mean the pull stopped at a limit; I could not check this, because the total OpenAlex reported at pull time is not saved.
+* `scripts/04_network_viz.py` and `scripts/05_simple_viz.py` are untracked. If their figures are used, commit them.
+* The Results notes contain interpretive sentences (for example, plain reading paragraphs and limitation bullets). None were copied here.
+* Header counts in `06a_refetch_references.py` (809 of 1,500 and 688 of 1,154 empty) are stated in its docstring only. I did not rerun that script, as instructed.
