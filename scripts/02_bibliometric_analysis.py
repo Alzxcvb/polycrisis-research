@@ -37,7 +37,11 @@ FIG_DIR.mkdir(exist_ok=True)
 
 def load_data():
     poly = pd.read_csv(DATA_DIR / "polycrisis_papers.csv")
-    ltg = pd.read_csv(DATA_DIR / "ltg_papers.csv")
+    # Prefer the refined LtG corpus (Meadows/Club of Rome only, no biology noise)
+    ltg_path = DATA_DIR / "ltg_refined_papers.csv"
+    if not ltg_path.exists():
+        ltg_path = DATA_DIR / "ltg_papers.csv"
+    ltg = pd.read_csv(ltg_path)
     poly["query"] = "polycrisis"
     ltg["query"] = "limits_to_growth"
     return poly, ltg

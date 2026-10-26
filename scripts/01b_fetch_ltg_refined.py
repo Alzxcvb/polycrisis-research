@@ -40,17 +40,54 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 BASE_URL = "https://api.openalex.org/works"
 
-# LtG-specific co-occurring terms — if a paper mentions "limits to growth"
-# AND one of these, it's almost certainly about the Meadows concept
-LTG_MARKERS = {
-    "meadows", "club of rome", "world3", "world 3", "overshoot", "collapse",
-    "planetary boundaries", "system dynamics", "carrying capacity",
-    "ecological footprint", "steady state", "degrowth", "post-growth",
-    "resource depletion", "population growth", "exponential growth",
-    "sustainability transition", "ecological economics", "donella",
-    "jorgen randers", "herrington", "turner", "nebel", "polycrisis",
-    "forrester", "systems thinking", "feedback loop", "nonrenewable",
-    "industrial output", "pollution", "finite world", "overshoot and collapse",
+# Tiered markers for isolating the Meadows/Club of Rome "Limits to Growth"
+# concept from the biology/ecology noise (cell growth, plant growth, etc.).
+#
+# STRONG = names/terms that are essentially unique to the Meadows literature.
+# A paper mentioning any of these is accepted even if biology terms appear.
+STRONG_LTG_MARKERS = {
+    "meadows", "donella", "jorgen randers", "forrester", "club of rome",
+    "world3", "world 3", "herrington", "nebel", "turner",
+    "overshoot and collapse", "finite world",
+    "polycrisis", "degrowth", "post-growth",
+}
+
+# MEDIUM = LtG-adjacent concepts that are also used in ecology/biology.
+# Accept only when NO biology/ecology markers appear.
+MEDIUM_LTG_MARKERS = {
+    "planetary boundaries", "system dynamics", "systems thinking",
+    "ecological footprint", "carrying capacity", "steady state economy",
+    "ecological economics", "sustainability transition",
+    "industrial output", "nonrenewable resources",
+    "overshoot",
+}
+
+# Biology / ecology / medicine / chemistry noise. If any of these appear
+# AND no STRONG marker is present, reject the paper as off-topic.
+BIO_ECO_MARKERS = {
+    # ecology / environmental bio
+    "ecology", "ecological niche", "ecosystem function",
+    "phytoplankton", "cyanobacteria", "algae", "algal", "fungal", "fungi",
+    "yeast", "bacterial", "bacteria", "microbial", "microbe",
+    "biofilm", "rhizosphere", "mycorrhiz",
+    # cell / cancer biology
+    "cancer", "tumor", "tumour", "carcinoma", "metastasis", "oncology",
+    "cell proliferation", "cell cycle", "cell culture", "cell line",
+    "in vitro", "in vivo", "clinical trial", "patient outcomes",
+    # plant / agriculture
+    "seedling", "germination", "leaf area", "crop yield", "agronomic",
+    "horticulture", "cultivar", "rootstock", "photosynthesis",
+    # animal biology
+    "broiler", "livestock", "juvenile fish", "larvae", "larval",
+    "insect", "rodent", "mammal", "avian", "poultry",
+    # molecular bio
+    "enzyme", "genome", "chromosome", "dna", "rna transcription",
+    "protein expression", "gene expression",
+    # elemental / nutrient bio
+    "iron limitation", "nitrogen limitation", "phosphorus limitation",
+    "nutrient limitation", "phosphate", "nitrate",
+    # medicine
+    "diabetes", "cardiovascular", "patient", "dosage", "therapy",
 }
 
 
@@ -98,49 +135,47 @@ def get_top_concepts(concepts) -> str:
     return "; ".join(c.get("display_name", "") for c in sorted_concepts[:5])
 
 
-def is_ltg_relevant(work) -> bool:
+def is_ltg_relevant(work) -> tuple[bool, str]:
     """
-    Check if a paper is actually about the Meadows 'Limits to Growth' concept
-    by looking for co-occurring LtG-specific terms in title, abstract, and keywords.
-    """
-    text_parts = []
+    Tiered relevance check. Returns (keep, reason) so we can audit the filter.
 
-    # Title
+    Rules:
+      1. STRONG marker in title/abstract/keywords -> keep (reason: strong)
+      2. Any bio/ecology marker -> reject (reason: bio_noise)
+      3. MEDIUM marker -> keep (reason: medium)
+      4. Short title with exact 'limits to growth' and no bio noise -> keep
+      5. Otherwise -> reject
+    """
     title = (work.get("title") or "").lower()
-    text_parts.append(title)
-
-    # Abstract
     abstract = reconstruct_abstract(work.get("abstract_inverted_index")).lower()
-    text_parts.append(abstract)
+    kw_text = " ".join(
+        (kw.get("display_name") or "").lower() for kw in work.get("keywords", [])
+    )
+    concept_text = " ".join(
+        (c.get("display_name") or "").lower() for c in work.get("concepts", [])
+    )
+    combined = " ".join([title, abstract, kw_text, concept_text])
 
-    # Keywords
-    for kw in work.get("keywords", []):
-        text_parts.append((kw.get("display_name") or "").lower())
+    # Rule 1: strong markers override everything
+    for m in STRONG_LTG_MARKERS:
+        if m in combined:
+            return True, "strong"
 
-    # Concepts
-    for c in work.get("concepts", []):
-        text_parts.append((c.get("display_name") or "").lower())
+    # Rule 2: biology/ecology noise -> reject
+    for m in BIO_ECO_MARKERS:
+        if m in combined:
+            return False, f"bio_noise:{m}"
 
-    combined = " ".join(text_parts)
+    # Rule 3: medium markers with no bio noise -> keep
+    for m in MEDIUM_LTG_MARKERS:
+        if m in combined:
+            return True, "medium"
 
-    # Check for LtG markers
-    for marker in LTG_MARKERS:
-        if marker in combined:
-            return True
+    # Rule 4: exact-phrase short title, clean of bio noise
+    if re.search(r"\blimits to growth\b", title) and len(title) < 120:
+        return True, "exact_title"
 
-    # Also accept if the title itself says "limits to growth" with quotes-like emphasis
-    # (i.e., it's the subject, not just a phrase used in passing)
-    if re.search(r'\blimits to growth\b', title) and len(title) < 120:
-        # Short title with exact phrase = likely about the concept
-        # Check it's not biology
-        bio_markers = {"cancer", "tumor", "cell", "phytoplankton", "plant",
-                       "bacterial", "microbial", "algae", "fungal", "yeast",
-                       "zeolite", "enzyme", "protein", "gene", "iron",
-                       "nitrogen", "phosphorus", "nutrient"}
-        if not any(bm in combined for bm in bio_markers):
-            return True
-
-    return False
+    return False, "no_marker"
 
 
 def fetch_all_works(filter_str, per_page=200):
@@ -211,21 +246,42 @@ def works_to_dataframe(works):
 
 
 def main():
+    import sys
+
     print("=" * 60)
     print("REFINED Limits to Growth Query")
-    print("Fetching all 'limits to growth' papers, then filtering")
-    print("to only Meadows/Club of Rome related work.")
     print("=" * 60)
 
-    filter_str = 'title_and_abstract.search:"limits to growth"'
-    works = fetch_all_works(filter_str)
+    # Two modes:
+    #   default        -> fetch from OpenAlex (slow, hits the network)
+    #   --refilter     -> reapply filter to cached ltg_refined_papers_raw.json
+    refilter = "--refilter" in sys.argv
+    raw_path = DATA_DIR / "ltg_refined_papers_raw.json"
 
-    # Filter for relevance
+    if refilter and raw_path.exists():
+        print(f"  Re-filtering cached data from {raw_path.name}")
+        with open(raw_path) as f:
+            works = json.load(f)
+        print(f"  Loaded {len(works):,} cached works")
+    else:
+        filter_str = 'title_and_abstract.search:"limits to growth"'
+        works = fetch_all_works(filter_str)
+
+    # Filter for relevance with reason tracking
     print(f"\n  Filtering {len(works):,} papers for LtG relevance...")
-    relevant = [w for w in works if is_ltg_relevant(w)]
+    relevant = []
+    reason_counts: dict[str, int] = {}
+    for w in works:
+        keep, reason = is_ltg_relevant(w)
+        reason_counts[reason] = reason_counts.get(reason, 0) + 1
+        if keep:
+            relevant.append(w)
     rejected = len(works) - len(relevant)
     print(f"  Kept: {len(relevant):,} papers")
-    print(f"  Rejected: {rejected:,} papers (biology, off-topic)")
+    print(f"  Rejected: {rejected:,} papers")
+    print("  Decision breakdown:")
+    for reason, count in sorted(reason_counts.items(), key=lambda x: -x[1]):
+        print(f"    {count:>5,}  {reason}")
 
     # Save raw JSON
     json_path = DATA_DIR / "ltg_refined_papers_raw.json"
